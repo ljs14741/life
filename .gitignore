@@ -1,0 +1,14 @@
+# Node/Next
+node_modules/
+.next/
+.vercel/
+
+# Java/Spring
+backend/build/
+backend/out/
+backend/.gradle/
+*.log
+
+# IDE
+.idea/
+.vscode/
