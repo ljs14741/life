@@ -38,7 +38,7 @@ export default function Header() {
 
                     {/* 서브 카피 */}
                     <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
-                        인망모 — <span className="font-semibold">인생망한모임</span> · 인생 뭐 있나 즐기자.
+                        인망모 — <span className="font-semibold">인생 망한 사람들의 모임</span> · 인생 뭐 있나 즐기자.
                     </p>
                 </motion.h1>
             </div>
