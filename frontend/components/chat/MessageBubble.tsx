@@ -19,6 +19,12 @@ export default function MessageBubble({ msg }: { msg: ChatMessage }) {
                             : 'bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-50'
                 )}
             >
+                {/* 닉네임 */}
+                {!isSystem && (
+                    <div className="text-[10px] opacity-80 mb-1">
+                        {msg.nickname ?? '익명'}{isUser ? ' (나)' : ''}
+                    </div>
+                )}
                 {msg.text}
                 <div className="mt-1 text-[10px] opacity-70">
                     {new Date(msg.createdAt).toLocaleTimeString()}
