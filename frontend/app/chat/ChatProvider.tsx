@@ -89,23 +89,41 @@ export function ChatProvider({ children }: PropsWithChildren) {
         client.onConnect = () => {
             setConnected(true);
 
-            client.subscribe('/topic/room/public', (frame: IMessage) => {
+            client.subscribe('/topic/public', (frame: IMessage) => {
                 try {
-                    const p = JSON.parse(frame.body) as Payload;
+                    const p = JSON.parse(frame.body) as {
+                        id?: string;
+                        sender?: string;
+                        nickname?: string;
+                        text?: string;
+                        createDate?: string; // "yyyy-MM-dd HH:mm:ss"
+                    };
 
-                    const id = p.id ?? uuid(); // 서버에서 id 안 주면 생성
-                    if (messagesRef.current.some(m => m.id === id)) return; // 중복 방지
+                    // 고유 ID (없으면 생성)
+                    const id = p.id ?? uuid();
 
+                    // 중복 방지 (messagesRef는 최신 상태를 useEffect로 유지 중이라고 가정)
+                    if (messagesRef.current?.some(m => m.id === id)) return;
+
+                    // 내/남 구분
                     const me = profileRef.current;
                     const isMine = !!(p.sender && me && p.sender === me.senderId);
+
+                    // createdAt 안전 파싱 (없으면 now)
+                    let createdAt = Date.now();
+                    if (typeof p.createDate === 'string' && p.createDate.trim().length > 0) {
+                        const iso = p.createDate.replace(' ', 'T');        // "yyyy-MM-ddTHH:mm:ss"
+                        const d = new Date(iso + '+09:00');                // KST 기준
+                        if (!isNaN(d.getTime())) createdAt = d.getTime();
+                    }
 
                     add({
                         id,
                         role: isMine ? 'user' : 'bot',
-                        text: p.text,
-                        createdAt: p.createdAt ?? Date.now(),
+                        text: p.text ?? '',
+                        createdAt,
                         senderId: p.sender,
-                        nickname: p.nickname ?? (isMine ? me?.nickname : '익명'),
+                        nickname: p.nickname ?? '익명',
                     });
                 } catch {
                     add({ id: uuid(), role: 'system', text: '수신 파싱 오류', createdAt: Date.now() });

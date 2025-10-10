@@ -8,5 +8,5 @@ public class ChatMessageDTO {
     private String sender;    // senderId 개념
     private String nickname;  // 익명 닉네임
     private String text;
-    private long createdAt;
+    private String createDate; // "yyyy-MM-dd HH:mm:ss" 문자열
 }
