@@ -28,19 +28,23 @@ public class PostController {
                 .toList();
     }
 
+    // 단건
+    @GetMapping("/{id}")
+    public PostDTO get(@PathVariable Long id) {
+        return svc.get(id);
+    }
+
     // 목록
     @GetMapping
     public List<PostDTO> list(@RequestParam(required = false) String categoryCode,
                               @RequestParam(required = false) String q,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "20") int size) {
-        return svc.list(categoryCode, q, page, size);
-    }
-
-    // 단건
-    @GetMapping("/{id}")
-    public PostDTO get(@PathVariable Long id) {
-        return svc.get(id);
+                              @RequestParam(defaultValue = "12") int size,
+                              @RequestParam(defaultValue = "latest") String sort,   // ✅ 추가: latest|best|trending
+                              @RequestParam(required = false) String period,        // ✅ 예: 7d|14d|30d (best/trending에서 사용)
+                              @RequestParam(defaultValue = "12") int min            // ✅ 실시간 부족 시 백필 최소 개수
+    ) {
+        return svc.listAdvanced(categoryCode, q, page, size, sort, period, min);
     }
 
     // 생성

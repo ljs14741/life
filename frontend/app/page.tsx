@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import ChatDock from '@/components/chat/ChatDock';
 import { ChatProvider } from './chat/ChatProvider';
@@ -21,10 +22,11 @@ type Post = {
 };
 
 const fetcher = (url: string) =>
-    fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } }).then(r => r.json() as Promise<Post[]>);
+    fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } })
+        .then((r) => r.json() as Promise<Post[]>);
 
 // ---- 좋아요 로컬 상태 ----
-function getLikedSet(): Set<number> {
+function loadLikedIds(): Set<number> {
     try {
         const raw = localStorage.getItem('liked_posts');
         const arr = raw ? (JSON.parse(raw) as number[]) : [];
@@ -33,16 +35,27 @@ function getLikedSet(): Set<number> {
         return new Set<number>();
     }
 }
-function saveLikedSet(set: Set<number>) {
+function saveLikedIds(set: Set<number>) {
     localStorage.setItem('liked_posts', JSON.stringify(Array.from(set)));
 }
 
 export default function Home() {
-    const { data, isLoading, error, mutate } = useSWR<Post[]>(`${API}/api/posts?page=0&size=12`, fetcher);
-    const likedSet = (typeof window !== 'undefined') ? getLikedSet() : new Set<number>();
+    // 탭: 베스트 / 실시간 / 최신
+    const [tab, setTab] = useState<'best' | 'trending' | 'latest'>('best');
+
+    // 좋아요 상태 (로컬)
+    const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
+    useEffect(() => {
+        setLikedIds(loadLikedIds());
+    }, []);
+
+    const { data, isLoading, error, mutate } = useSWR<Post[]>(
+        `${API}/api/posts?sort=${tab}&page=0&size=12`,
+        fetcher
+    );
 
     const toggleLike = async (id: number) => {
-        const wasLiked = likedSet.has(id);
+        const wasLiked = likedIds.has(id);
         const url = wasLiked ? `${API}/api/posts/${id}/unlike` : `${API}/api/posts/${id}/like`;
 
         try {
@@ -54,17 +67,18 @@ export default function Home() {
             }
             const newCount: number = await r.json();
 
-            // 목록 즉시 반영
+            // 목록에 즉시 반영
             mutate(
-                (prev) => (prev ?? []).map(p => (p.id === id ? { ...p, likes: newCount } : p)),
+                (prev) => (prev ?? []).map((p) => (p.id === id ? { ...p, likes: newCount } : p)),
                 { revalidate: false }
             );
 
-            // 로컬 상태 업데이트
-            const next = new Set<number>(likedSet);
+            // 로컬 좋아요 상태 반영
+            const next = new Set(likedIds);
             if (wasLiked) next.delete(id);
             else next.add(id);
-            saveLikedSet(next);
+            setLikedIds(next);
+            saveLikedIds(next);
         } catch (e) {
             alert(e instanceof Error ? e.message : String(e));
         }
@@ -73,43 +87,55 @@ export default function Home() {
     return (
         <ChatProvider>
             <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-
+                {/* 상단 히어로 (간소화) */}
                 <section className="mx-auto max-w-6xl px-4 pt-6">
-                    <div className="rounded-3xl border border-neutral-200/60 p-6 shadow-sm dark:border-neutral-800/80">
-                        <h2 className="text-lg font-semibold">인망모 MVP</h2>
-                        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                            채팅부터 시작해요. 우측 하단의 버튼을 눌러 대화를 시작하세요!
-                        </p>
-
-                        <div className="mt-4">
-                            <a
-                                href="/write"
-                                className="inline-block rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
-                           bg-neutral-900 text-white hover:opacity-90 active:opacity-80
-                           dark:bg-white dark:text-black"
-                            >
-                                글 쓰기
-                            </a>
-                        </div>
+                    <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80 flex items-center justify-between">
+                        <h2 className="text-lg font-semibold">인생망한모임</h2>
+                        <a
+                            href="/write"
+                            className="inline-block rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
+              bg-neutral-900 text-white hover:opacity-90 active:opacity-80
+              dark:bg-white dark:text-black"
+                        >
+                            글 쓰기
+                        </a>
                     </div>
                 </section>
 
+                {/* 목록 + 탭 */}
                 <section className="mx-auto max-w-6xl px-4 pb-20 pt-6">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-base font-semibold">최신 글</h3>
-                        <span className="text-xs text-neutral-500">
+                    {/* 탭 */}
+                    <div className="mb-4 flex items-center gap-2 text-sm">
+                        {[
+                            { key: 'best', label: '베스트' },
+                            { key: 'trending', label: '실시간' },
+                            { key: 'latest', label: '최신' },
+                        ].map((t) => (
+                            <button
+                                key={t.key}
+                                onClick={() => setTab(t.key as 'best' | 'trending' | 'latest')}
+                                className={`rounded-full px-3 py-1 ring-1 ring-black/10 dark:ring-white/10 transition
+                  ${tab === t.key
+                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
+                            >
+                                {t.label}
+                            </button>
+                        ))}
+                        <span className="ml-auto text-xs text-neutral-500">
               {isLoading ? '불러오는 중…' : error ? '불러오기 실패' : `${data?.length ?? 0}개`}
             </span>
                     </div>
 
+                    {/* 카드 그리드 */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {(data ?? []).map((p) => {
-                            const liked = likedSet.has(p.id);
+                            const liked = likedIds.has(p.id);
                             return (
                                 <div
                                     key={p.id}
                                     className="rounded-2xl border border-neutral-200/70 p-4 hover:bg-neutral-50
-                             dark:border-neutral-800 dark:hover:bg-neutral-900"
+                    dark:border-neutral-800 dark:hover:bg-neutral-900"
                                 >
                                     <a href={`/posts/${p.id}`} className="block">
                                         <div className="text-xs flex items-center gap-2">
@@ -125,12 +151,11 @@ export default function Home() {
 
                                     <div className="mt-3 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
                                         <span>{p.authorNick}</span>
-
-                                        <div className="flex items-center gap-2">
-                                            <span>👁 {p.views ?? 0}</span>
+                                        <div className="flex items-center gap-3">
+                                            <span title="조회수">👁 {p.views ?? 0}</span>
                                             <button
                                                 onClick={() => toggleLike(p.id)}
-                                                className={`inline-flex items-center gap-1 ${
+                                                className={`inline-flex items-center gap-1 transition ${
                                                     liked ? 'text-red-600' : 'text-neutral-500'
                                                 }`}
                                                 aria-label="좋아요"
@@ -144,6 +169,13 @@ export default function Home() {
                                 </div>
                             );
                         })}
+
+                        {/* Empty state */}
+                        {!isLoading && !error && (data?.length ?? 0) === 0 && (
+                            <div className="col-span-full rounded-xl border border-dashed p-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                                아직 글이 없어요. 첫 글을 남겨보세요! → <a className="underline" href="/write">글쓰기</a>
+                            </div>
+                        )}
                     </div>
                 </section>
             </main>

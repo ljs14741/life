@@ -11,6 +11,7 @@ import com.life.backend.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -54,6 +55,111 @@ public class PostService {
         if (p.isDeleted()) throw new ResponseStatusException(NOT_FOUND, "삭제된 글입니다.");
         p.setViews(p.getViews() + 1);
         return toDTO(p);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostDTO> listAdvanced(String categoryCode, String q, int page, int size,
+                                      String sort, String period, int min) {
+        Category cat = null;
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            cat = categoryRepo.findByCode(categoryCode).orElse(null);
+        }
+        final var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size,1), 100));
+
+        sort = (sort == null ? "latest" : sort.toLowerCase());
+        switch (sort) {
+            case "best":
+                return listBest(cat, q, pageable, normalizePeriod(period, "30d"));
+            case "trending":
+                return listTrendingWithBackfill(cat, q, pageable, min);
+            case "latest":
+            default:
+                return postRepo.findLatest(cat, emptyToNull(q), pageable).stream().map(this::toDTO).toList();
+        }
+    }
+
+    private String normalizePeriod(String period, String def) {
+        if (period == null || period.isBlank()) return def;
+        return switch (period.toLowerCase()) {
+            case "7d", "14d", "30d" -> period.toLowerCase();
+            default -> def;
+        };
+    }
+
+    private java.time.LocalDateTime now() {
+        return java.time.LocalDateTime.now();
+    }
+
+    private java.time.LocalDateTime sinceFromPeriod(String period) {
+        return switch (period) {
+            case "7d"  -> now().minusDays(7);
+            case "14d" -> now().minusDays(14);
+            default    -> now().minusDays(30);
+        };
+    }
+
+    // 베스트: 기간 내 좋아요 desc → 조회수 desc → 최신순
+    private List<PostDTO> listBest(Category cat, String q, Pageable pageable, String period) {
+        var since = sinceFromPeriod(period);
+        // 후보를 넉넉히 가져와서 메모리 정렬 (DB 정렬도 가능하지만 가중/타이브레이크 일관성 위해)
+        var candidates = postRepo.findCandidatesSince(cat, emptyToNull(q), since, PageRequest.of(0, Math.max(pageable.getPageSize()*3, 60)));
+        candidates.sort((a, b) -> {
+            int c = Integer.compare(b.getLikes(), a.getLikes());
+            if (c != 0) return c;
+            c = Integer.compare(b.getViews(), a.getViews());
+            if (c != 0) return c;
+            return b.getCreateDate().compareTo(a.getCreateDate());
+        });
+        return candidates.stream().limit(pageable.getPageSize()).map(this::toDTO).toList();
+    }
+
+    // 실시간: 점수 + 백필(윈도우 확장 → 최신 백필)로 항상 N개 이상 반환
+    private List<PostDTO> listTrendingWithBackfill(Category cat, String q, Pageable pageable, int min) {
+        int need = Math.max(min, pageable.getPageSize());
+        var windows = List.of("7d", "14d", "30d", "all");
+        List<Post> picked = new ArrayList<>();
+
+        for (String w : windows) {
+            List<Post> cand;
+            if ("all".equals(w)) {
+                cand = postRepo.findLatest(cat, emptyToNull(q), PageRequest.of(0, Math.max(need*3, 60)));
+            } else {
+                var since = sinceFromPeriod(w);
+                cand = postRepo.findCandidatesSince(cat, emptyToNull(q), since, PageRequest.of(0, Math.max(need*3, 60)));
+            }
+            // 점수 계산 정렬
+            cand.sort((a, b) -> Double.compare(score(b), score(a)));
+            for (Post p : cand) {
+                if (picked.size() >= need) break;
+                if (!picked.contains(p)) picked.add(p);
+            }
+            if (picked.size() >= need) break;
+        }
+
+        // 그래도 부족하면 최신으로 백필
+        if (picked.size() < need) {
+            var latest = postRepo.findLatest(cat, emptyToNull(q), PageRequest.of(0, need*2));
+            for (Post p : latest) {
+                if (picked.size() >= need) break;
+                if (!picked.contains(p)) picked.add(p);
+            }
+        }
+
+        return picked.stream()
+                .skip((long) pageable.getPageNumber() * pageable.getPageSize()) // 간단 페이지네이션
+                .limit(pageable.getPageSize())
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private double score(Post p) {
+        // likes/views는 int, ageHours는 double
+        double likes = p.getLikes();
+        double views = p.getViews();
+        double ageHours = java.time.Duration.between(p.getCreateDate(), now()).toHours();
+        double decay = Math.exp(-ageHours / 72.0); // half-life ~3일 느낌
+        double recentBoost = (ageHours <= 24.0) ? 3.0 : 0.0;
+        return (likes * 2.0 + views * 0.1) * decay + recentBoost;
     }
 
     // 생성

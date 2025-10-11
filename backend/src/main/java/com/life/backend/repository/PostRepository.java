@@ -24,4 +24,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         Pageable pageable);
 
     Optional<Post> findByClientReqId(String clientReqId);
+
+    @Query("""
+        select p from Post p
+        where p.deleteYn = 'N'
+          and (:cat is null or p.category = :cat)
+          and (:q is null or lower(p.title) like lower(concat('%', :q, '%')))
+        order by p.createDate desc
+    """)
+    List<Post> findLatest(@Param("cat") Category cat,
+                          @Param("q") String q,
+                          Pageable pageable);
+
+    // 기간 내 후보(실시간/베스트용 – 기간 필터)
+    @Query("""
+        select p from Post p
+        where p.deleteYn = 'N'
+          and p.createDate >= :since
+          and (:cat is null or p.category = :cat)
+          and (:q is null or lower(p.title) like lower(concat('%', :q, '%')))
+        order by p.createDate desc
+    """)
+    List<Post> findCandidatesSince(@Param("cat") Category cat,
+                                   @Param("q") String q,
+                                   @Param("since") java.time.LocalDateTime since,
+                                   Pageable pageable);
 }
