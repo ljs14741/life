@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Header from '@/components/Header';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
@@ -102,7 +101,6 @@ export default function WritePage() {
 
     return (
         <div className="min-h-screen bg-neutral-50">
-            <Header />
             <main className="max-w-3xl mx-auto p-4">
                 <h1 className="text-2xl font-bold mb-4">글쓰기</h1>
 

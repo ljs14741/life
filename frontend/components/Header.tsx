@@ -1,5 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export default function Header() {
     const big = ['인', '망', '모'];
@@ -10,37 +11,43 @@ export default function Header() {
             <div className="mx-auto max-w-6xl px-4 pt-10 pb-8">
                 {/* 상단 뱃지 / 서브카피 */}
                 <div className="mb-4 flex items-center gap-2">
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
             인생을 망쳐본 사람들의 솔직한 커뮤니티
           </span>
                 </div>
 
-                {/* 인터리브 로고 (배지 인라인 버전: 잘림 방지) */}
-                <motion.h1
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="font-extrabold leading-none tracking-[-0.02em]"
+                {/* 👇 타이틀 전체를 홈 링크로 감싸기 */}
+                <Link
+                    href="/"
+                    aria-label="인망모 홈으로 이동"
+                    className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 rounded"
                 >
-                    <div className="flex select-none items-end gap-1 text-[64px] sm:text-[88px] md:text-[112px] flex-wrap">
-                        {big.map((ch, i) => (
-                            <span key={i} className="flex items-end">
-                <span className="bg-gradient-to-b from-[#5CC6FF] via-[#7C87FF] to-[#C06BFF] bg-clip-text text-transparent drop-shadow-[0_8px_24px_rgba(124,135,255,0.5)]">
-                  {ch}
+                    <motion.h1
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        className="font-extrabold leading-none tracking-[-0.02em]"
+                    >
+                        <div className="flex select-none items-end gap-1 text-[64px] sm:text-[88px] md:text-[112px] flex-wrap">
+                            {big.map((ch, i) => (
+                                <span key={i} className="flex items-end">
+                  <span className="bg-gradient-to-b from-[#5CC6FF] via-[#7C87FF] to-[#C06BFF] bg-clip-text text-transparent drop-shadow-[0_8px_24px_rgba(124,135,255,0.5)] transition-opacity group-hover:opacity-90">
+                    {ch}
+                  </span>
+                                    {/* 인라인 배지 */}
+                                    <span className="ml-1 translate-y-[8px] rounded-md bg-black/5 px-2 py-[2px] text-[14px] sm:text-[16px] md:text-[18px] font-medium text-neutral-600 backdrop-blur dark:bg-white/5 dark:text-neutral-200">
+                    {small[i]}
+                  </span>
                 </span>
-                                {/* 인라인 배지: 절대위치 제거, 잘림/겹침 방지 */}
-                                <span className="ml-1 translate-y-[8px] rounded-md bg-black/5 px-2 py-[2px] text-[14px] sm:text-[16px] md:text-[18px] font-medium text-neutral-600 backdrop-blur dark:bg-white/5 dark:text-neutral-200">
-                  {small[i]}
-                </span>
-              </span>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
 
-                    {/* 서브 카피 */}
-                    <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
-                        인망모 — <span className="font-semibold">인생 망한 사람들의 모임</span> · 인생 뭐 있나 즐기자.
-                    </p>
-                </motion.h1>
+                        {/* 서브 카피 */}
+                        <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                            인망모 — <span className="font-semibold">인생 망한 사람들의 모임</span> · 인생 뭐 있나 즐기자.
+                        </p>
+                    </motion.h1>
+                </Link>
             </div>
 
             {/* 배경 글로우 */}

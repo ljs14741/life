@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Header from '@/components/Header';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
@@ -99,7 +98,6 @@ export default function PostEdit() {
 
     return (
         <div className="min-h-screen bg-neutral-50">
-            <Header />
             <main className="max-w-3xl mx-auto p-4">
                 <h1 className="text-2xl font-bold mb-4">글 수정</h1>
                 <form onSubmit={onSubmit} className="space-y-4">

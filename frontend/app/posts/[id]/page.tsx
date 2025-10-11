@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Header from '@/components/Header';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
@@ -256,7 +255,6 @@ export default function PostDetail() {
 
     return (
         <div className="min-h-screen bg-neutral-50">
-            <Header />
             <main className="max-w-3xl mx-auto p-4">
                 {/* 제목 + 우측 액션 */}
                 <div className="flex items-start justify-between gap-4">

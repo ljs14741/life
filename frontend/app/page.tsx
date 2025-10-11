@@ -1,7 +1,6 @@
 'use client';
 
 import useSWR from 'swr';
-import Header from '@/components/Header';
 import ChatDock from '@/components/chat/ChatDock';
 import { ChatProvider } from './chat/ChatProvider';
 
@@ -74,7 +73,6 @@ export default function Home() {
     return (
         <ChatProvider>
             <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-                <Header />
 
                 <section className="mx-auto max-w-6xl px-4 pt-6">
                     <div className="rounded-3xl border border-neutral-200/60 p-6 shadow-sm dark:border-neutral-800/80">
