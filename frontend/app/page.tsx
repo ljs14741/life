@@ -1,9 +1,9 @@
 'use client';
 
 import useSWR from 'swr';
-import { ChatProvider } from './chat/ChatProvider';
-import ChatDock from '@/components/chat/ChatDock';
 import Header from '@/components/Header';
+import ChatDock from '@/components/chat/ChatDock';
+import { ChatProvider } from './chat/ChatProvider';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
@@ -22,10 +22,54 @@ type Post = {
 };
 
 const fetcher = (url: string) =>
-    fetch(url, { cache: 'no-store' }).then(r => r.json() as Promise<Post[]>);
+    fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } }).then(r => r.json() as Promise<Post[]>);
+
+// ---- 좋아요 로컬 상태 ----
+function getLikedSet(): Set<number> {
+    try {
+        const raw = localStorage.getItem('liked_posts');
+        const arr = raw ? (JSON.parse(raw) as number[]) : [];
+        return new Set(arr);
+    } catch {
+        return new Set<number>();
+    }
+}
+function saveLikedSet(set: Set<number>) {
+    localStorage.setItem('liked_posts', JSON.stringify(Array.from(set)));
+}
 
 export default function Home() {
-    const { data, isLoading, error } = useSWR<Post[]>(`${API}/api/posts?page=0&size=12`, fetcher);
+    const { data, isLoading, error, mutate } = useSWR<Post[]>(`${API}/api/posts?page=0&size=12`, fetcher);
+    const likedSet = (typeof window !== 'undefined') ? getLikedSet() : new Set<number>();
+
+    const toggleLike = async (id: number) => {
+        const wasLiked = likedSet.has(id);
+        const url = wasLiked ? `${API}/api/posts/${id}/unlike` : `${API}/api/posts/${id}/like`;
+
+        try {
+            const r = await fetch(url, { method: 'POST', headers: { Accept: 'application/json' } });
+            if (!r.ok) {
+                const msg = await r.text();
+                alert(msg || r.statusText);
+                return;
+            }
+            const newCount: number = await r.json();
+
+            // 목록 즉시 반영
+            mutate(
+                (prev) => (prev ?? []).map(p => (p.id === id ? { ...p, likes: newCount } : p)),
+                { revalidate: false }
+            );
+
+            // 로컬 상태 업데이트
+            const next = new Set<number>(likedSet);
+            if (wasLiked) next.delete(id);
+            else next.add(id);
+            saveLikedSet(next);
+        } catch (e) {
+            alert(e instanceof Error ? e.message : String(e));
+        }
+    };
 
     return (
         <ChatProvider>
@@ -61,30 +105,47 @@ export default function Home() {
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {(data ?? []).map((p) => (
-                            <a
-                                key={p.id}
-                                href={`/posts/${p.id}`}
-                                className="block rounded-2xl border border-neutral-200/70 p-4 hover:bg-neutral-50
-                           dark:border-neutral-800 dark:hover:bg-neutral-900"
-                            >
-                                <div className="text-xs flex items-center gap-2">
-                  <span className="rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-800">
-                    {p.categoryName}
-                  </span>
+                        {(data ?? []).map((p) => {
+                            const liked = likedSet.has(p.id);
+                            return (
+                                <div
+                                    key={p.id}
+                                    className="rounded-2xl border border-neutral-200/70 p-4 hover:bg-neutral-50
+                             dark:border-neutral-800 dark:hover:bg-neutral-900"
+                                >
+                                    <a href={`/posts/${p.id}`} className="block">
+                                        <div className="text-xs flex items-center gap-2">
+                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-800">
+                        {p.categoryName}
+                      </span>
+                                        </div>
+                                        <h4 className="mt-2 line-clamp-1 text-lg font-semibold">{p.title}</h4>
+                                        <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
+                                            {p.content}
+                                        </p>
+                                    </a>
+
+                                    <div className="mt-3 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                                        <span>{p.authorNick}</span>
+
+                                        <div className="flex items-center gap-2">
+                                            <span>👁 {p.views ?? 0}</span>
+                                            <button
+                                                onClick={() => toggleLike(p.id)}
+                                                className={`inline-flex items-center gap-1 ${
+                                                    liked ? 'text-red-600' : 'text-neutral-500'
+                                                }`}
+                                                aria-label="좋아요"
+                                                title="좋아요"
+                                            >
+                                                <span>♥</span>
+                                                <span>{p.likes ?? 0}</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <h4 className="mt-2 line-clamp-1 text-lg font-semibold">{p.title}</h4>
-                                <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
-                                    {p.content}
-                                </p>
-                                <div className="mt-3 flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                                    <span>{p.authorNick}</span>
-                                    <span>
-                    {p.createDate} · ❤ {p.likes}
-                  </span>
-                                </div>
-                            </a>
-                        ))}
+                            );
+                        })}
                     </div>
                 </section>
             </main>

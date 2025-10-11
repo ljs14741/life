@@ -1,6 +1,7 @@
 package com.life.backend.controller;
 
 import com.life.backend.dto.CategoryDTO;
+import com.life.backend.dto.CommentDTO;
 import com.life.backend.dto.PostDTO;
 import com.life.backend.repository.CategoryRepository;
 import com.life.backend.service.PostService;
@@ -69,9 +70,41 @@ public class PostController {
         svc.verify(id, in.getPassword()); // 통과 시 200 OK, 실패 시 401
     }
 
-    // 좋아요
+    // 좋아요 +1
     @PostMapping("/{id}/like")
     public int like(@PathVariable Long id) {
         return svc.like(id);
+    }
+
+    // ✅ 좋아요 -1
+    @PostMapping("/{id}/unlike")
+    public int unlike(@PathVariable Long id) {
+        return svc.unlike(id);
+    }
+
+    @GetMapping("/{id}/comments")
+    public List<CommentDTO> listComments(@PathVariable Long id) {
+        return svc.listComments(id);
+    }
+
+    @PostMapping("/{id}/comments")
+    public CommentDTO createComment(@PathVariable Long id, @RequestBody CommentDTO in) {
+        return svc.createComment(id, in);
+    }
+
+    @PutMapping("/{postId}/comments/{commentId}")
+    public CommentDTO updateComment(@PathVariable Long postId,
+                                    @PathVariable Long commentId,
+                                    @RequestBody CommentDTO in) {
+        return svc.updateComment(postId, commentId, in);
+    }
+
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    public void deleteComment(@PathVariable Long postId,
+                              @PathVariable Long commentId,
+                              @RequestParam(required = false) String password,
+                              @RequestBody(required = false) CommentDTO body) {
+        String pw = password != null ? password : (body != null ? body.getPassword() : null);
+        svc.deleteComment(postId, commentId, pw);
     }
 }
