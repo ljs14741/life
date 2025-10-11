@@ -1,144 +1,208 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import ChatDock from '@/components/chat/ChatDock';
-import { ChatProvider } from '@/app/chat/ChatProvider';
-import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
-type Profile = { senderId: string; nickname: string };
+type Category = { id: number; code: string; name: string };
 
-const MAX_CONTENT = 20000;
-const MAX_TITLE = 120;
-
-function genUuid(): string {
-    if (typeof crypto !== 'undefined' && typeof (crypto as Crypto).randomUUID === 'function') {
-        return (crypto as Crypto).randomUUID();
-    }
-    const b = new Uint8Array(16);
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(b);
-    else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
-    b[6] = (b[6] & 0x0f) | 0x40;
-    b[8] = (b[8] & 0x3f) | 0x80;
-    const h = Array.from(b, x => x.toString(16).padStart(2, '0'));
-    return `${h.slice(0,4).join('')}-${h.slice(4,6).join('')}-${h.slice(6,8).join('')}-${h.slice(8,10).join('')}-${h.slice(10).join('')}`;
-}
-
-function loadProfile(): Profile {
-    try {
-        const raw = localStorage.getItem('imangmo_profile_v1');
-        if (!raw) return { senderId: 'anon', nickname: '익명' };
-        const p = JSON.parse(raw) as Partial<Profile>;
-        if (typeof p?.senderId === 'string' && typeof p?.nickname === 'string') {
-            return { senderId: p.senderId, nickname: p.nickname };
-        }
-    } catch {}
-    return { senderId: 'anon', nickname: '익명' };
+// 에러 메시지 안전 추출
+function getErrorMessage(e: unknown) {
+    if (e instanceof Error) return e.message;
+    try { return JSON.stringify(e); } catch { return String(e); }
 }
 
 export default function WritePage() {
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [categoryCode, setCategoryCode] = useState<string>('MISTAKE');
+
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [category, setCategory] = useState('MISTAKE');
-    const [profile, setProfile] = useState<Profile>({ senderId: 'anon', nickname: '익명' });
-    const [pending, setPending] = useState(false);
+    const [nickname, setNickname] = useState('');
+    const [password, setPassword] = useState('');
+    const [password2, setPassword2] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    // 🔒 즉시 차단용 락
-    const lockRef = useRef(false);
-    // ♻️ 멱등키: 컴포넌트가 살아있는 동안 고정
-    const clientReqIdRef = useRef<string>(genUuid());
+    useEffect(() => {
+        // 마지막 닉네임 복구
+        const saved = localStorage.getItem('im_nickname');
+        if (saved) setNickname(saved);
 
-    useEffect(() => { setProfile(loadProfile()); }, []);
+        // 카테고리 로드 (PostController에 넣은 엔드포인트 사용)
+        fetch(`${API}/api/posts/categories`)
+            .then(async (r) => {
+                if (!r.ok) throw new Error(await r.text());
+                return r.json();
+            })
+            .then((data: Category[]) => {
+                setCategories(data);
+                // 기본 선택값이 목록에 없으면 첫 항목으로
+                if (data.length && !data.some((c) => c.code === categoryCode)) {
+                    setCategoryCode(data[0].code);
+                }
+            })
+            .catch((e) => {
+                console.warn('카테고리 로드 실패:', e);
+                // 실패 시에도 최소한 기존 기본값(MISTAKE)로 진행
+            });
+    }, []);
 
-    const submit = async () => {
-        if (lockRef.current) return;
-        lockRef.current = true;
+    const validate = () => {
+        if (!nickname.trim()) return '닉네임을 입력하세요.';
+        if (!password || password.trim().length < 3) return '비밀번호는 최소 3자입니다.';
+        if (password !== password2) return '비밀번호 확인이 일치하지 않습니다.';
+        if (!title.trim()) return '제목을 입력하세요.';
+        if (!content.trim()) return '내용을 입력하세요.';
+        return null;
+    };
+
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const v = validate();
+        if (v) { alert(v); return; }
+        setSubmitting(true);
+
+        const clientReqId = crypto.randomUUID();
+
         try {
-            if (!title.trim() || !content.trim()) { alert('제목/본문을 입력해 주세요.'); return; }
-            if (title.length > MAX_TITLE) { alert(`제목은 ${MAX_TITLE}자 이하`); return; }
-            if (content.length > MAX_CONTENT) { alert(`본문은 ${MAX_CONTENT.toLocaleString()}자 이하`); return; }
-
-            setPending(true);
-
-            const body = {
-                clientReqId: clientReqIdRef.current,   // 항상 같은 값
-                title,
-                content,
-                categoryCode: category,
-                authorId: profile.senderId,
-                authorNick: profile.nickname,
-            };
-
             const res = await fetch(`${API}/api/posts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                body: JSON.stringify({
+                    clientReqId,
+                    categoryCode,
+                    title,
+                    content,
+                    authorNick: nickname, // DTO: authorNick로 전달
+                    password,             // DTO: password(WRITE_ONLY)
+                }),
             });
 
             if (!res.ok) {
-                const msg = await res.text().catch(() => '');
-                alert('작성 실패: ' + msg);
-                return;
+                const t = await res.text();
+                throw new Error(t || '등록 실패');
             }
 
-            const p: { id: number } = await res.json();
-            location.href = `/posts/${p.id}`;
+            const data = await res.json();
+            localStorage.setItem('im_nickname', nickname);
+
+            // ✅ 우선은 메인 목록으로 이동 (라우팅이 확실)
+            window.location.href = '/';
+
+            // 상세 페이지가 준비되어 있다면 아래 라인으로 교체:
+            // window.location.href = `/posts/${data.id}`;
+            return;
+        } catch (e) {
+            alert(getErrorMessage(e) || '오류가 발생했습니다.');
         } finally {
-            setPending(false);
-            lockRef.current = false;
+            setSubmitting(false);
         }
     };
 
     return (
-        <ChatProvider>
-            <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-                <Header />
-                <section className="mx-auto max-w-3xl px-4 py-8">
-                    <h1 className="text-2xl font-bold mb-4">글 쓰기</h1>
+        <div className="min-h-screen bg-neutral-50">
+            <Header />
+            <main className="max-w-3xl mx-auto p-4">
+                <h1 className="text-2xl font-bold mb-4">글쓰기</h1>
 
-                    <div className="space-y-4">
-                        <input className="w-full rounded-xl border p-3" placeholder="제목"
-                               value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_TITLE} />
-
-                        <select className="w-full rounded-xl border p-3"
-                                value={category} onChange={(e) => setCategory(e.target.value)}>
-                            <option value="MISTAKE">실수담</option>
-                            <option value="REVIEW">실패 분석</option>
-                            <option value="CAREER">커리어/학업</option>
-                            <option value="RELATION">인간관계</option>
-                            <option value="MONEY">돈/재정</option>
-                            <option value="FREE">기타/잡담</option>
+                <form onSubmit={onSubmit} className="space-y-4">
+                    {/* 카테고리 */}
+                    <div>
+                        <label className="block text-sm font-medium">카테고리</label>
+                        <select
+                            className="mt-1 w-full border rounded p-2"
+                            value={categoryCode}
+                            onChange={(e) => setCategoryCode(e.target.value)}
+                        >
+                            {categories.length > 0 ? (
+                                categories.map((c) => (
+                                    <option key={c.id} value={c.code}>
+                                        {c.name}
+                                    </option>
+                                ))
+                            ) : (
+                                // 로딩/실패 대비: 최소 기본 옵션
+                                <>
+                                    <option value="MISTAKE">실수담</option>
+                                </>
+                            )}
                         </select>
+                    </div>
 
-                        <textarea className="w-full min-h-[280px] rounded-xl border p-3"
-                                  placeholder="본문"
-                                  value={content} onChange={(e) => setContent(e.target.value)} />
-                        <div className="flex justify-end text-xs text-neutral-500">
-                            {content.length.toLocaleString()} / {MAX_CONTENT.toLocaleString()}
+                    {/* 닉네임 */}
+                    <div>
+                        <label className="block text-sm font-medium">닉네임</label>
+                        <input
+                            className="mt-1 w-full border rounded p-2"
+                            value={nickname}
+                            onChange={(e) => setNickname(e.target.value)}
+                            placeholder="익명고래1234"
+                            maxLength={32}
+                            required
+                        />
+                    </div>
+
+                    {/* 비밀번호/확인 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium">비밀번호(최소 3자)</label>
+                            <input
+                                type="password"
+                                className="mt-1 w-full border rounded p-2"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                minLength={3}
+                                required
+                            />
                         </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={submit}
-                                disabled={pending}
-                                aria-disabled={pending}
-                                className={`rounded-xl px-4 py-2 transition ${
-                                    pending
-                                        ? 'bg-neutral-400 text-white cursor-not-allowed pointer-events-none'
-                                        : 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-                                }`}
-                            >
-                                {pending ? '등록 중…' : '등록'}
-                            </button>
-                            <Link href="/" className="rounded-xl border px-4 py-2">취소</Link>
+                        <div>
+                            <label className="block text-sm font-medium">비밀번호 확인</label>
+                            <input
+                                type="password"
+                                className="mt-1 w-full border rounded p-2"
+                                value={password2}
+                                onChange={(e) => setPassword2(e.target.value)}
+                                minLength={3}
+                                required
+                            />
                         </div>
                     </div>
-                </section>
+
+                    {/* 제목 */}
+                    <div>
+                        <label className="block text-sm font-medium">제목</label>
+                        <input
+                            className="mt-1 w-full border rounded p-2"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            maxLength={120}
+                            required
+                        />
+                    </div>
+
+                    {/* 내용 */}
+                    <div>
+                        <label className="block text-sm font-medium">내용</label>
+                        <textarea
+                            className="mt-1 w-full border rounded p-2 min-h-[200px]"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            maxLength={20000}
+                            required
+                        />
+                    </div>
+
+                    {/* 제출 */}
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+                    >
+                        {submitting ? '등록 중…' : '등록'}
+                    </button>
+                </form>
             </main>
-            <ChatDock />
-        </ChatProvider>
+        </div>
     );
 }

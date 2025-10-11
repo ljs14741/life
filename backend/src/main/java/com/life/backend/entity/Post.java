@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_cat_date", columnList = "category_id,create_date"),
                 @Index(name = "idx_date",     columnList = "create_date"),
                 @Index(name = "idx_author",   columnList = "author_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name="uk_post_client_req_id", columnNames = "client_req_id")
         }
 )
 public class Post {
@@ -51,8 +54,14 @@ public class Post {
     @Column(nullable=false)
     private int likes = 0;
 
-    @Column(name="is_deleted", nullable=false)
-    private boolean deleted = false;
+    @Column(name="post_password_hash", length=255)
+    private String postPasswordHash;
+
+    @Column(name="update_yn", columnDefinition = "char(1) default 'N'", nullable=false)
+    private String updateYn = "N";
+
+    @Column(name="delete_yn", columnDefinition = "char(1) default 'N'", nullable=false)
+    private String deleteYn = "N";
 
     @Column(name = "create_date", insertable = false, updatable = false, nullable = false)
     @Generated(GenerationTime.INSERT)
@@ -61,4 +70,8 @@ public class Post {
     @Column(name = "update_date", insertable = false, updatable = false, nullable = false)
     @Generated(GenerationTime.ALWAYS)
     private LocalDateTime updateDate;
+
+    public boolean isDeleted() {
+        return "Y".equalsIgnoreCase(deleteYn);
+    }
 }

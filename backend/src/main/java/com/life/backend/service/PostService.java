@@ -8,112 +8,152 @@ import com.life.backend.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static org.springframework.http.HttpStatus.*;
+
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PostService {
+
     private final PostRepository postRepo;
-    private final CategoryRepository catRepo;
+    private final CategoryRepository categoryRepo;
 
     private static final DateTimeFormatter F = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final PasswordEncoder encoder = new BCryptPasswordEncoder();
 
+    // 목록
+    public List<PostDTO> list(String categoryCode, String q, int page, int size) {
+        Category cat = null;
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            cat = categoryRepo.findByCode(categoryCode).orElse(null);
+        }
+        var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size,1), 100));
+        return postRepo.findList(cat, emptyToNull(q), pageable).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    // 단건 조회 (+조회수 증가)
     @Transactional
-    public PostDTO create(PostDTO in) throws Throwable {
-        if (in.getClientReqId() == null || in.getClientReqId().isBlank()) {
-            throw new IllegalArgumentException("missing clientReqId"); // ← 선택이지만 강력추천
+    public PostDTO get(Long id) {
+        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        if (p.isDeleted()) throw new ResponseStatusException(NOT_FOUND, "삭제된 글입니다.");
+        p.setViews(p.getViews() + 1);
+        return toDTO(p);
+    }
+
+    // 생성
+    @Transactional
+    public PostDTO create(PostDTO in) {
+        if (in.getPassword() == null || in.getPassword().trim().length() < 3) {
+            throw new ResponseStatusException(BAD_REQUEST, "비밀번호는 최소 3자입니다.");
+        }
+        if (in.getAuthorNick() == null || in.getAuthorNick().trim().isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "닉네임을 입력해주세요.");
         }
 
-        // 1) 멱등키로 선조회
-        var dup = postRepo.findByClientReqId(in.getClientReqId());
-        if (dup.isPresent()) return toDTO(dup.get());
+        var cat = categoryRepo.findByCode(in.getCategoryCode())
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "잘못된 카테고리 코드"));
 
-        Category c = catRepo.findByCode(in.getCategoryCode())
-                .orElseThrow(() -> new IllegalArgumentException("invalid category"));
-
-        Post p = new Post();
-        p.setClientReqId(in.getClientReqId());  // ✅ 꼭 저장해야 함
-        p.setCategory(c);
+        var p = new Post();
+        p.setClientReqId(in.getClientReqId());
+        p.setCategory(cat);
         p.setTitle(in.getTitle());
         p.setContent(in.getContent());
-        p.setAuthorId(in.getAuthorId());
-        p.setAuthorNick(in.getAuthorNick());
+        p.setAuthorId("anon");
+        p.setAuthorNick(in.getAuthorNick().trim());
+        p.setPostPasswordHash(encoder.encode(in.getPassword()));
+        p.setUpdateYn("N");
+        p.setDeleteYn("N");
 
         try {
-            postRepo.save(p);
+            p = postRepo.save(p);
         } catch (DataIntegrityViolationException e) {
-            // 2) 경쟁상황에서 UNIQUE 충돌 시 기존 레코드 반환
-            return postRepo.findByClientReqId(in.getClientReqId())
-                    .map(this::toDTO).orElseThrow(e::getCause);
+            var dup = postRepo.findByClientReqId(in.getClientReqId());
+            if (dup.isPresent()) return toDTO(dup.get());
+            throw e;
         }
         return toDTO(p);
     }
 
+    // 수정 (비번 확인 → update_yn='Y')
     @Transactional
-    public PostDTO update(Long id, PostDTO in, String authorId) {
-        Post p = postRepo.findById(id).orElseThrow();
-        if (!p.getAuthorId().equals(authorId)) throw new RuntimeException("FORBIDDEN");
+    public PostDTO update(Long id, PostDTO in) {
+        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        if (p.isDeleted()) throw new ResponseStatusException(NOT_FOUND, "삭제된 글입니다.");
 
-        if (in.getTitle()!=null)   p.setTitle(in.getTitle());
-        if (in.getContent()!=null) p.setContent(in.getContent());
-        if (in.getCategoryCode()!=null) {
-            Category c = catRepo.findByCode(in.getCategoryCode()).orElseThrow();
-            p.setCategory(c);
-        }
-        postRepo.save(p);
+        verifyPassword(p, in.getPassword());
+
+        if (in.getTitle() != null)   p.setTitle(in.getTitle());
+        if (in.getContent() != null) p.setContent(in.getContent());
+        p.setUpdateYn("Y");
         return toDTO(p);
     }
 
+    // 삭제 (비번 확인 → delete_yn='Y')
     @Transactional
-    public void delete(Long id, String authorId) {
-        Post p = postRepo.findById(id).orElseThrow();
-        if (!p.getAuthorId().equals(authorId)) throw new RuntimeException("FORBIDDEN");
-        p.setDeleted(true);
-        postRepo.save(p);
+    public void delete(Long id, String password) {
+        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        verifyPassword(p, password);
+        p.setDeleteYn("Y");
     }
 
-    @Transactional(readOnly = true)
-    public List<PostDTO> list(String categoryCode, String q, int page, int size) {
-        Category c = null;
-        if (categoryCode != null && !categoryCode.isBlank()) {
-            c = catRepo.findByCode(categoryCode).orElse(null);
-        }
-        var list = postRepo.findList(c, (q==null||q.isBlank())?null:q, PageRequest.of(page, size));
-        return list.stream().map(this::toDTO).toList();
+    // ✨ 비밀번호 사전검증 (수정 화면 진입 전에 사용)
+    public void verify(Long id, String password) {
+        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        verifyPassword(p, password); // 통과하면 아무 예외 없이 끝
     }
 
-    @Transactional(readOnly = true)
-    public PostDTO get(Long id) {
-        Post p = postRepo.findById(id).orElseThrow();
-        return toDTO(p);
-    }
-
+    // 좋아요
     @Transactional
     public int like(Long id) {
-        Post p = postRepo.findById(id).orElseThrow();
-        p.setLikes(p.getLikes()+1);
-        postRepo.save(p);
+        Post p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        if (p.isDeleted()) throw new ResponseStatusException(NOT_FOUND, "삭제된 글입니다.");
+        p.setLikes(p.getLikes() + 1);
         return p.getLikes();
+    }
+
+    // --------- 내부 유틸 ---------
+
+    private void verifyPassword(Post p, String raw) {
+        if (p.getPostPasswordHash() == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "이 글은 비밀번호가 없어 수정/삭제할 수 없습니다.");
+        }
+        if (raw == null || raw.isBlank() || !encoder.matches(raw, p.getPostPasswordHash())) {
+            throw new ResponseStatusException(UNAUTHORIZED, "비밀번호가 올바르지 않습니다.");
+        }
+    }
+
+    private String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     private PostDTO toDTO(Post p) {
         PostDTO d = new PostDTO();
         d.setId(p.getId());
-        d.setCategoryCode(p.getCategory().getCode());
-        d.setCategoryName(p.getCategory().getName());
+        d.setClientReqId(p.getClientReqId());
+        d.setCategoryCode(p.getCategory() != null ? p.getCategory().getCode() : null);
+        d.setCategoryName(p.getCategory() != null ? p.getCategory().getName() : null);
         d.setTitle(p.getTitle());
         d.setContent(p.getContent());
         d.setAuthorId(p.getAuthorId());
         d.setAuthorNick(p.getAuthorNick());
-        d.setCreateDate(p.getCreateDate()!=null ? p.getCreateDate().format(F) : null);
-        d.setUpdateDate(p.getUpdateDate()!=null ? p.getUpdateDate().format(F) : null);
+        d.setCreateDate(p.getCreateDate() != null ? p.getCreateDate().format(F) : null);
+        d.setUpdateDate(p.getUpdateDate() != null ? p.getUpdateDate().format(F) : null);
         d.setViews(p.getViews());
         d.setLikes(p.getLikes());
+        d.setUpdateYn(p.getUpdateYn());
+        d.setDeleteYn(p.getDeleteYn());
         return d;
     }
 }

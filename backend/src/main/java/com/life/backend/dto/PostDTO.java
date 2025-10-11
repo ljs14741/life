@@ -1,5 +1,6 @@
 package com.life.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter; import lombok.Setter;
 
 @Getter @Setter
@@ -16,4 +17,9 @@ public class PostDTO {
     private String updateDate;
     private Integer views;
     private Integer likes;
+    private String updateYn;
+    private String deleteYn;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String password;
 }
