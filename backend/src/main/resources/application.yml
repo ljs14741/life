@@ -4,3 +4,19 @@ server:
 app:
   allowed-origins:
     - "http://localhost:3000"
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/life?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 87654321
+
+  jpa:
+    hibernate:
+      ddl-auto: update   # 개발 중엔 update, 운영은 validate 권장(+Flyway)
+    open-in-view: false  # 권장
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc.time_zone: Asia/Seoul
