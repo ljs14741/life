@@ -3,6 +3,8 @@ server:
 
 app:
   allowed-origins:
+    - "https://life.binaryworld.kr"
+    - "http://life.binaryworld.kr"
     - "http://localhost:3000"
 
 spring:
