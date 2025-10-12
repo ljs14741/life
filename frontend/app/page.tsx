@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import ChatDock from '@/components/chat/ChatDock';
 import { ChatProvider } from './chat/ChatProvider';
 
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_BASE || '';
 
 type Post = {
     id: number;

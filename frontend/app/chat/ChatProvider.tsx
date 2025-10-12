@@ -42,7 +42,7 @@ type ChatContextValue = {
 
 // ===== 유틸/상수 =====
 const PROFILE_KEY = 'imangmo_profile_v1';
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
 
 function uuid() {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 const BASE = 'https://life.binaryworld.kr';
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_BASE || '';
 
 type Post = {
     id: number;

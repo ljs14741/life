@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_BASE || '';
 
 type Category = { id: number; code: string; name: string };
 
