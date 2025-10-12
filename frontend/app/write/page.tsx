@@ -6,7 +6,6 @@ const API = process.env.NEXT_PUBLIC_API_BASE || '';
 
 type Category = { id: number; code: string; name: string };
 
-// 에러 메시지 안전 추출
 function getErrorMessage(e: unknown) {
     if (e instanceof Error) return e.message;
     try { return JSON.stringify(e); } catch { return String(e); }
@@ -24,11 +23,9 @@ export default function WritePage() {
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        // 마지막 닉네임 복구
         const saved = localStorage.getItem('im_nickname');
         if (saved) setNickname(saved);
 
-        // 카테고리 로드 (PostController에 넣은 엔드포인트 사용)
         fetch(`${API}/api/posts/categories`)
             .then(async (r) => {
                 if (!r.ok) throw new Error(await r.text());
@@ -36,15 +33,11 @@ export default function WritePage() {
             })
             .then((data: Category[]) => {
                 setCategories(data);
-                // 기본 선택값이 목록에 없으면 첫 항목으로
                 if (data.length && !data.some((c) => c.code === categoryCode)) {
                     setCategoryCode(data[0].code);
                 }
             })
-            .catch((e) => {
-                console.warn('카테고리 로드 실패:', e);
-                // 실패 시에도 최소한 기존 기본값(MISTAKE)로 진행
-            });
+            .catch((e) => console.warn('카테고리 로드 실패:', e));
     }, []);
 
     const validate = () => {
@@ -73,8 +66,8 @@ export default function WritePage() {
                     categoryCode,
                     title,
                     content,
-                    authorNick: nickname, // DTO: authorNick로 전달
-                    password,             // DTO: password(WRITE_ONLY)
+                    authorNick: nickname,
+                    password,
                 }),
             });
 
@@ -83,14 +76,8 @@ export default function WritePage() {
                 throw new Error(t || '등록 실패');
             }
 
-            const data = await res.json();
             localStorage.setItem('im_nickname', nickname);
-
-            // ✅ 우선은 메인 목록으로 이동 (라우팅이 확실)
             window.location.href = '/';
-
-            // 상세 페이지가 준비되어 있다면 아래 라인으로 교체:
-            // window.location.href = `/posts/${data.id}`;
             return;
         } catch (e) {
             alert(getErrorMessage(e) || '오류가 발생했습니다.');
@@ -99,9 +86,18 @@ export default function WritePage() {
         }
     };
 
+    // 공통 입력 클래스 (iOS 대응: text-[16px], 명시적 배경/색 지정)
+    const inputCls =
+        'mt-1 w-full rounded border p-2 text-[16px] ' +
+        'bg-white text-neutral-900 placeholder:text-neutral-400 ' +
+        'dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 ' +
+        'border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ' +
+        'dark:border-neutral-700';
+
     return (
-        <div className="min-h-screen bg-neutral-50">
-            <main className="max-w-3xl mx-auto p-4">
+        <div className="min-h-screen bg-neutral-50 dark:bg-black">
+            {/* 메인 컨텐츠가 장식보다 위에 오도록 */}
+            <main className="relative z-10 max-w-3xl mx-auto p-4">
                 <h1 className="text-2xl font-bold mb-4">글쓰기</h1>
 
                 <form onSubmit={onSubmit} className="space-y-4">
@@ -109,22 +105,15 @@ export default function WritePage() {
                     <div>
                         <label className="block text-sm font-medium">카테고리</label>
                         <select
-                            className="mt-1 w-full border rounded p-2"
+                            className={inputCls + ' appearance-none'}
                             value={categoryCode}
                             onChange={(e) => setCategoryCode(e.target.value)}
                         >
-                            {categories.length > 0 ? (
-                                categories.map((c) => (
-                                    <option key={c.id} value={c.code}>
-                                        {c.name}
-                                    </option>
+                            {categories.length > 0
+                                ? categories.map((c) => (
+                                    <option key={c.id} value={c.code}>{c.name}</option>
                                 ))
-                            ) : (
-                                // 로딩/실패 대비: 최소 기본 옵션
-                                <>
-                                    <option value="MISTAKE">실수담</option>
-                                </>
-                            )}
+                                : <option value="MISTAKE">실수담</option>}
                         </select>
                     </div>
 
@@ -132,7 +121,7 @@ export default function WritePage() {
                     <div>
                         <label className="block text-sm font-medium">닉네임</label>
                         <input
-                            className="mt-1 w-full border rounded p-2"
+                            className={inputCls}
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
                             placeholder="익명고래1234"
@@ -147,7 +136,7 @@ export default function WritePage() {
                             <label className="block text-sm font-medium">비밀번호(최소 3자)</label>
                             <input
                                 type="password"
-                                className="mt-1 w-full border rounded p-2"
+                                className={inputCls}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 minLength={3}
@@ -158,7 +147,7 @@ export default function WritePage() {
                             <label className="block text-sm font-medium">비밀번호 확인</label>
                             <input
                                 type="password"
-                                className="mt-1 w-full border rounded p-2"
+                                className={inputCls}
                                 value={password2}
                                 onChange={(e) => setPassword2(e.target.value)}
                                 minLength={3}
@@ -171,7 +160,7 @@ export default function WritePage() {
                     <div>
                         <label className="block text-sm font-medium">제목</label>
                         <input
-                            className="mt-1 w-full border rounded p-2"
+                            className={inputCls}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             maxLength={120}
@@ -183,7 +172,7 @@ export default function WritePage() {
                     <div>
                         <label className="block text-sm font-medium">내용</label>
                         <textarea
-                            className="mt-1 w-full border rounded p-2 min-h-[200px]"
+                            className={inputCls + ' min-h-[200px]'}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             maxLength={20000}
@@ -191,11 +180,10 @@ export default function WritePage() {
                         />
                     </div>
 
-                    {/* 제출 */}
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+                        className="bg-black text-white rounded px-4 py-2 disabled:opacity-50 dark:bg-white dark:text-black"
                     >
                         {submitting ? '등록 중…' : '등록'}
                     </button>
