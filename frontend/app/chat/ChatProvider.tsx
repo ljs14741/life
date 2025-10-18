@@ -9,6 +9,7 @@ import React, {
     useState,
     PropsWithChildren,
 } from 'react';
+import { maskProfanity } from '@/lib/moderation/profanity';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { createChatClient } from '@/lib/ws/client'; // SockJS로 `${API_BASE}/ws-chat` 접속
 
@@ -126,7 +127,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
                 return {
                     id: p.id,
                     role: isMine ? 'user' : 'bot',
-                    text: p.text,
+                    text: maskProfanity(p.text),
                     createdAt,
                     senderId: p.sender,
                     nickname: p.nickname,
@@ -164,7 +165,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
             add({
                 id,
                 role: isMine ? 'user' : 'bot',
-                text: p.text ?? '',
+                text: maskProfanity(p.text ?? ''),
                 createdAt,
                 senderId: p.sender,
                 nickname: p.nickname ?? '익명',
