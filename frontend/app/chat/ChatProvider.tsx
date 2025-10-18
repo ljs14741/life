@@ -10,6 +10,7 @@ import React, {
     PropsWithChildren,
 } from 'react';
 import { maskProfanity } from '@/lib/moderation/profanity';
+import { canSendNow, remaining, retryAfterMs } from '@/lib/moderation/rateLimit';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { createChatClient } from '@/lib/ws/client'; // SockJS로 `${API_BASE}/ws-chat` 접속
 
@@ -19,7 +20,7 @@ export interface ChatMessage {
     id: string;
     role: ChatRole;
     text: string;
-    createdAt: number;    // 프론트 내부 표시에 쓰는 epoch ms
+    createdAt: number; // 프론트 내부 표시에 쓰는 epoch ms
     senderId?: string;
     nickname?: string;
 }
@@ -28,7 +29,7 @@ type Profile = { senderId: string; nickname: string };
 
 type ChatContextValue = {
     isOpen: boolean;
-    connected: boolean;            // ✅ ChatDock에서 배지로 사용
+    connected: boolean;
     messages: ChatMessage[];
     profile: Profile | null;
 
@@ -47,7 +48,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
 
 function uuid() {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         const v = c === 'x' ? r : (r & 0x3) | 0x8;
         return v.toString(16);
@@ -59,8 +60,8 @@ function hashStr(s: string) {
     return h;
 }
 function makeNicknameDeterministic(senderId: string) {
-    const adj = ['절망의','희망의','근성의','눈물의','개미지옥','불굴의','추락한','부활한'];
-    const ani = ['돌고래','사자','두더지','너구리','펭귄','두루미','고양이','강아지'];
+    const adj = ['절망의', '희망의', '근성의', '눈물의', '개미지옥', '불굴의', '추락한', '부활한'];
+    const ani = ['돌고래', '사자', '두더지', '너구리', '펭귄', '두루미', '고양이', '강아지'];
     const h = hashStr(senderId);
     const a = adj[h % adj.length];
     const b = ani[(h >>> 8) % ani.length];
@@ -79,7 +80,7 @@ export const useChat = () => {
 // ===== Provider =====
 export function ChatProvider({ children }: PropsWithChildren) {
     const [isOpen, setIsOpen] = useState(false);
-    const [connected, setConnected] = useState(false);              // ✅
+    const [connected, setConnected] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [profileState, setProfileState] = useState<Profile | null>(null);
 
@@ -87,9 +88,11 @@ export function ChatProvider({ children }: PropsWithChildren) {
     const subRef = useRef<StompSubscription | null>(null);
     const messagesRef = useRef<ChatMessage[]>([]);
     const profileRef = useRef<Profile | null>(null);
-    const activatedRef = useRef(false);                             // ✅ StrictMode 중복 방지
+    const activatedRef = useRef(false); // StrictMode 중복 방지
 
-    useEffect(() => { messagesRef.current = messages; }, [messages]);
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // 프로필 초기화 (senderId/nickname만 로컬에 유지)
     useEffect(() => {
@@ -110,17 +113,21 @@ export function ChatProvider({ children }: PropsWithChildren) {
         }
     }, []);
 
-    const add = (m: ChatMessage) => setMessages(prev => [...prev, m]);
+    const add = (m: ChatMessage) => setMessages((prev) => [...prev, m]);
 
     // 히스토리 로딩 (최근 N개)
     const loadHistory = async (limit = 50) => {
         try {
             const res = await fetch(`${API_BASE}/api/chat/messages?limit=${limit}`, { cache: 'no-store' });
-            const arr = await res.json() as Array<{
-                id: string; sender: string; nickname: string; text: string; createDate: string;
+            const arr = (await res.json()) as Array<{
+                id: string;
+                sender: string;
+                nickname: string;
+                text: string;
+                createDate: string;
             }>;
             // 서버가 최신→과거 순이면 시간순으로 뒤집기
-            const ordered = arr.reverse().map(p => {
+            const ordered = arr.reverse().map((p) => {
                 const createdAt = parseCreateDate(p.createDate);
                 const me = profileRef.current;
                 const isMine = !!(me && p.sender === me.senderId);
@@ -134,29 +141,31 @@ export function ChatProvider({ children }: PropsWithChildren) {
                 } as ChatMessage;
             });
             setMessages(ordered);
-        } catch (e) {
-            // 히스토리 로드 실패해도 UI는 계속 동작하도록 조용히 처리
-            // console.error('history load failed', e);
+        } catch {
+            // 조용히 패스
         }
     };
 
     // "yyyy-MM-dd HH:mm:ss" → epoch ms
     function parseCreateDate(s?: string): number {
         if (!s) return Date.now();
-        const iso = s.replace(' ', 'T');      // "yyyy-MM-ddTHH:mm:ss"
-        const d = new Date(iso + '+09:00');   // KST
+        const iso = s.replace(' ', 'T'); // "yyyy-MM-ddTHH:mm:ss"
+        const d = new Date(iso + '+09:00'); // KST
         return isNaN(d.getTime()) ? Date.now() : d.getTime();
-        // 서버가 UTC로 내려주면 그냥 new Date(s).getTime()로 바꾸면 됨
     }
 
     // 메시지 수신 콜백
     const onMessage = (frame: IMessage) => {
         try {
             const p = JSON.parse(frame.body) as {
-                id?: string; sender?: string; nickname?: string; text?: string; createDate?: string;
+                id?: string;
+                sender?: string;
+                nickname?: string;
+                text?: string;
+                createDate?: string;
             };
             const id = p.id ?? uuid();
-            if (messagesRef.current.some(m => m.id === id)) return; // 중복 방지
+            if (messagesRef.current.some((m) => m.id === id)) return; // 중복 방지
 
             const me = profileRef.current;
             const isMine = !!(p.sender && me && p.sender === me.senderId);
@@ -170,14 +179,14 @@ export function ChatProvider({ children }: PropsWithChildren) {
                 senderId: p.sender,
                 nickname: p.nickname ?? '익명',
             });
-        } catch (e) {
-            // console.error('WS parse error', e, frame.body);
+        } catch {
+            // 무시
         }
     };
 
     // STOMP 연결 (시스템 메시지는 목록에 넣지 않음)
     useEffect(() => {
-        if (activatedRef.current) return;       // ✅ StrictMode 중복 방지
+        if (activatedRef.current) return;
         activatedRef.current = true;
 
         const client = createChatClient(API_BASE); // SockJS 클라이언트
@@ -187,23 +196,35 @@ export function ChatProvider({ children }: PropsWithChildren) {
         client.onConnect = async () => {
             setConnected(true);
 
-            // 1) DB에서 최근 히스토리 먼저
+            // 1) DB에서 최근 히스토리
             await loadHistory(50);
 
             // 2) 실시간 구독
-            if (subRef.current) { try { subRef.current.unsubscribe(); } catch {} }
+            if (subRef.current) {
+                try {
+                    subRef.current.unsubscribe();
+                } catch {}
+            }
             subRef.current = client.subscribe('/topic/public', onMessage);
         };
 
-        client.onStompError = () => { setConnected(false); };
-        client.onWebSocketClose = () => { setConnected(false); };
+        client.onStompError = () => {
+            setConnected(false);
+        };
+        client.onWebSocketClose = () => {
+            setConnected(false);
+        };
 
         client.activate();
         clientRef.current = client;
 
         return () => {
-            try { if (subRef.current) subRef.current.unsubscribe(); } catch {}
-            try { client.deactivate(); } catch {}
+            try {
+                if (subRef.current) subRef.current.unsubscribe();
+            } catch {}
+            try {
+                client.deactivate();
+            } catch {}
             clientRef.current = null;
         };
     }, []);
@@ -212,6 +233,15 @@ export function ChatProvider({ children }: PropsWithChildren) {
     const send = (text: string) => {
         const t = text.trim();
         if (!t) return;
+
+        // === 레이트리밋 체크 (도배 방지) ===
+        if (!canSendNow()) {
+            const left = remaining(); // 항상 0일 것
+            const wait = retryAfterMs();
+            const sec = Math.ceil(wait / 1000);
+            alert(`도배 방지: ${sec}초 후에 다시 보내주세요. (10초에 5회까지 전송 가능)`);
+            return;
+        }
 
         const c = clientRef.current;
         const me = profileRef.current;
@@ -228,27 +258,41 @@ export function ChatProvider({ children }: PropsWithChildren) {
             }),
         });
 
-        // 즉시 표시가 필요하면 아래를 주석 해제 (수신 시 같은 id는 무시)
-        // add({ id, role: 'user', text: t, createdAt: Date.now(), senderId: me.senderId, nickname: me.nickname });
+        // 필요 시, 즉시 표시:
+        // add({ id, role: 'user', text: maskProfanity(t), createdAt: Date.now(), senderId: me.senderId, nickname: me.nickname });
     };
 
     const clear = () => setMessages([]);
     const open = () => setIsOpen(true);
     const close = () => setIsOpen(false);
-    const toggle = () => setIsOpen(v => !v);
+    const toggle = () => setIsOpen((v) => !v);
 
     const setNickname = (nickname: string) => {
-        const cur = profileRef.current; if (!cur) return;
+        const cur = profileRef.current;
+        if (!cur) return;
         const next = { ...cur, nickname: nickname.trim() || cur.nickname };
         profileRef.current = next;
         setProfileState(next);
-        try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)); } catch {}
+        try {
+            localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+        } catch {}
     };
 
-    const value = useMemo<ChatContextValue>(() => ({
-        isOpen, connected, messages, profile: profileState,
-        open, close, toggle, send, clear, setNickname,
-    }), [isOpen, connected, messages, profileState]);
+    const value = useMemo<ChatContextValue>(
+        () => ({
+            isOpen,
+            connected,
+            messages,
+            profile: profileState,
+            open,
+            close,
+            toggle,
+            send,
+            clear,
+            setNickname,
+        }),
+        [isOpen, connected, messages, profileState],
+    );
 
     return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
