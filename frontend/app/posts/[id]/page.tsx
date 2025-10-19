@@ -288,13 +288,14 @@ export default function PostDetail() {
                     </div>
                 </div>
 
-                <article className="mt-6 whitespace-pre-wrap">
-                    {post.content}
-                </article>
+                <article
+                    className="mt-6 prose prose-neutral max-w-none"
+                    dangerouslySetInnerHTML={{__html: post.content}}
+                />
 
                 {/* ---------- 댓글 작성 ---------- */}
                 <section className="mt-10">
-                    <h2 className="text-lg font-semibold mb-3">댓글</h2>
+                <h2 className="text-lg font-semibold mb-3">댓글</h2>
                     <form onSubmit={submitComment} className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <input

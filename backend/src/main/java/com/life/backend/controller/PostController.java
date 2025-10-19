@@ -6,14 +6,16 @@ import com.life.backend.dto.PostDTO;
 import com.life.backend.repository.CategoryRepository;
 import com.life.backend.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "https://life.binaryworld.kr", "http://life.binaryworld.kr"})
 public class PostController {
 
     private final PostService svc;
@@ -110,5 +112,11 @@ public class PostController {
                               @RequestBody(required = false) CommentDTO body) {
         String pw = password != null ? password : (body != null ? body.getPassword() : null);
         svc.deleteComment(postId, commentId, pw);
+    }
+
+    // ===================== 업로드 =====================
+    @PostMapping(value = "/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PostService.UploadResult upload(@RequestParam("file") MultipartFile file) throws Exception {
+        return svc.upload(file);
     }
 }

@@ -12,7 +12,7 @@ type Post = {
     categoryCode: string;
     categoryName: string;
     title: string;
-    content: string;
+    content: string;     // HTML
     authorId: string;
     authorNick: string;
     createDate: string;
@@ -39,8 +39,22 @@ function saveLikedIds(set: Set<number>) {
     localStorage.setItem('liked_posts', JSON.stringify(Array.from(set)));
 }
 
+/** HTML을 텍스트 미리보기로 (태그 제거 + 엔티티 해제) */
+function htmlToPlainPreview(html: string, max = 120): string {
+    try {
+        // 브라우저 환경에서 DOMParser로 가장 정확하게 처리
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+        return text.length > max ? text.slice(0, max) + '…' : text;
+    } catch {
+        // 혹시 모듈 환경에서 실패하면 간단한 폴백
+        const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        return text.length > max ? text.slice(0, max) + '…' : text;
+    }
+}
+
 export default function Home() {
-    // 탭: 베스트 / 실시간 / 최신
     const [tab, setTab] = useState<'best' | 'trending' | 'latest'>('best');
 
     // 좋아요 상태 (로컬)
@@ -57,7 +71,6 @@ export default function Home() {
     const toggleLike = async (id: number) => {
         const wasLiked = likedIds.has(id);
         const url = wasLiked ? `${API}/api/posts/${id}/unlike` : `${API}/api/posts/${id}/like`;
-
         try {
             const r = await fetch(url, { method: 'POST', headers: { Accept: 'application/json' } });
             if (!r.ok) {
@@ -67,13 +80,11 @@ export default function Home() {
             }
             const newCount: number = await r.json();
 
-            // 목록에 즉시 반영
             mutate(
                 (prev) => (prev ?? []).map((p) => (p.id === id ? { ...p, likes: newCount } : p)),
                 { revalidate: false }
             );
 
-            // 로컬 좋아요 상태 반영
             const next = new Set(likedIds);
             if (wasLiked) next.delete(id);
             else next.add(id);
@@ -87,7 +98,7 @@ export default function Home() {
     return (
         <ChatProvider>
             <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-                {/* 상단 히어로 (간소화) */}
+                {/* 상단 */}
                 <section className="mx-auto max-w-6xl px-4 pt-6">
                     <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80 flex items-center justify-between">
                         <h2 className="text-lg font-semibold">인생망한모임</h2>
@@ -131,6 +142,7 @@ export default function Home() {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {(data ?? []).map((p) => {
                             const liked = likedIds.has(p.id);
+                            const preview = htmlToPlainPreview(p.content, 140);
                             return (
                                 <div
                                     key={p.id}
@@ -144,8 +156,9 @@ export default function Home() {
                       </span>
                                         </div>
                                         <h4 className="mt-2 line-clamp-1 text-lg font-semibold">{p.title}</h4>
+                                        {/* ✅ HTML을 텍스트로 바꾼 미리보기 */}
                                         <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
-                                            {p.content}
+                                            {preview}
                                         </p>
                                     </a>
 

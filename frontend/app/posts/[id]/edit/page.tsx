@@ -1,9 +1,11 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || '';
+const RichEditor = dynamic(() => import('@/components/RichEditor'), { ssr: false });
 
 type Post = { id: number; title: string; content: string };
 
@@ -27,10 +29,13 @@ function getErrorMessage(e: unknown) {
     try { return JSON.stringify(e); } catch { return String(e); }
 }
 
+const isHtmlEmpty = (html: string) =>
+    !html || !html.replace(/<[^>]*>/g, '').trim();
+
 export default function PostEdit() {
     const { id } = useParams<{ id: string }>();
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const [content, setContent] = useState('<p></p>');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
@@ -45,12 +50,12 @@ export default function PostEdit() {
                 }
 
                 const r = await fetch(`${API}/api/posts/${id}`, {
-                    headers: { 'Accept': 'application/json' },
+                    headers: { Accept: 'application/json' },
                 });
                 if (!r.ok) throw new Error(await getErrorMessageFromResponse(r));
                 const data: Post = await r.json();
                 setTitle(data.title);
-                setContent(data.content);
+                setContent(data.content || '<p></p>');
             } catch (e) {
                 alert(getErrorMessage(e));
             } finally {
@@ -62,7 +67,7 @@ export default function PostEdit() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) return alert('제목을 입력하세요.');
-        if (!content.trim()) return alert('내용을 입력하세요.');
+        if (isHtmlEmpty(content)) return alert('내용을 입력하세요.');
 
         const password = sessionStorage.getItem(`edit_pw_${id}`);
         if (!password) {
@@ -77,16 +82,15 @@ export default function PostEdit() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
-                body: JSON.stringify({ title, content, password }),
+                body: JSON.stringify({ title, content, password }), // ✅ HTML 전송
             });
             if (!r.ok) throw new Error(await getErrorMessageFromResponse(r));
 
             sessionStorage.removeItem(`edit_pw_${id}`);
-
             alert('수정되었습니다.');
-            window.location.href = `/`;
+            window.location.href = `/posts/${id}`;
         } catch (e) {
             alert(getErrorMessage(e) || '수정 실패');
         } finally {
@@ -114,13 +118,9 @@ export default function PostEdit() {
 
                     <div>
                         <label className="block text-sm font-medium">내용</label>
-                        <textarea
-                            className="mt-1 w-full border rounded p-2 min-h-[200px]"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            maxLength={20000}
-                            required
-                        />
+                        <div className="mt-1">
+                            <RichEditor value={content} onChange={setContent} />
+                        </div>
                     </div>
 
                     <div className="flex gap-2">

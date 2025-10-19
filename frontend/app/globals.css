@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* ✅ 타이포그래피 플러그인 활성화 */
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -23,4 +25,23 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* (선택) 에디터/보기에서 이미지·비디오가 영역에 맞게 표현되도록 약간 보정 */
+.prose :where(img, video) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+/* (선택) 리스트 여백 보정 */
+.prose :where(ul, ol) {
+  margin: 0.5rem 0;
+}
+
+.tiptap p { margin: 0; }
+.tiptap p + p { margin-top: .5rem; } /* 문단 사이 간격만 8px 정도 */
+.tiptap img, .tiptap video {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }

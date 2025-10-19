@@ -16,10 +16,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -35,6 +43,18 @@ public class PostService {
 
     private static final DateTimeFormatter F = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    @Value("${upload.dir:./uploads}")
+    private String uploadDir;
+
+    private static final Pattern SRC_OR_HREF = Pattern.compile("(?i)(?:src|href)=[\"']([^\"']+)[\"']");
+
+
+    // 허용 MIME
+    private static final Set<String> ALLOWED_IMAGE = Set.of(
+            "image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
+    private static final Set<String> ALLOWED_VIDEO = Set.of(
+            "video/mp4", "video/webm", "video/ogg");
 
     // 목록
     public List<PostDTO> list(String categoryCode, String q, int page, int size) {
@@ -197,20 +217,42 @@ public class PostService {
     // 수정
     @Transactional
     public PostDTO update(Long id, PostDTO in) {
-        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        var p = postRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
         if (p.isDeleted()) throw new ResponseStatusException(NOT_FOUND, "삭제된 글입니다.");
         verifyPostPassword(p, in.getPassword());
-        if (in.getTitle() != null)   p.setTitle(in.getTitle());
-        if (in.getContent() != null) p.setContent(in.getContent());
-        p.setUpdateYn("Y");
+
+        String oldHtml = p.getContent();
+        String newHtml = in.getContent();
+
+        if (in.getTitle() != null) p.setTitle(in.getTitle());
+
+        // ✅ content를 실제로 바꿀 때만 diff/삭제 수행
+        if (newHtml != null) {
+            p.setContent(newHtml);
+            p.setUpdateYn("Y");
+
+            var before = extractUploadPaths(oldHtml);
+            var after  = extractUploadPaths(newHtml);
+            before.removeAll(after);     // 수정 전엔 있었는데, 수정 후엔 없는 파일만
+            before.forEach(this::safeDelete);
+        }
+
         return toDTO(p);
     }
 
     // 삭제
     @Transactional
     public void delete(Long id, String password) {
-        var p = postRepo.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+        var p = postRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "글을 찾을 수 없습니다."));
+
         verifyPostPassword(p, password);
+
+        // ✨ 본문에 있는 업로드 파일들 삭제
+        extractUploadPaths(p.getContent()).forEach(this::safeDelete);
+
+        // 소프트 삭제 유지(현 구조)
         p.setDeleteYn("Y");
     }
 
@@ -327,4 +369,97 @@ public class PostService {
         d.setDeleteYn(c.getDeleteYn());
         return d;
     }
+
+    @Transactional
+    public UploadResult upload(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "빈 파일입니다.");
+        }
+        String ct = file.getContentType();
+        boolean ok = (ct != null) && (ALLOWED_IMAGE.contains(ct) || ALLOWED_VIDEO.contains(ct));
+        if (!ok) {
+            throw new ResponseStatusException(BAD_REQUEST, "허용되지 않는 파일 형식입니다: " + ct);
+        }
+
+        // /{uploadDir}/YYYY/MM/DD
+        Path root = Path.of(uploadDir).toAbsolutePath().normalize();
+        LocalDate today = LocalDate.now();
+        Path dir = root.resolve(Path.of(
+                Integer.toString(today.getYear()),
+                String.format("%02d", today.getMonthValue()),
+                String.format("%02d", today.getDayOfMonth())
+        ));
+        Files.createDirectories(dir);
+
+        // 저장 파일명: uuid + 원본 확장자
+        String ext = "";
+        String original = file.getOriginalFilename();
+        if (original != null && original.lastIndexOf('.') >= 0) {
+            ext = original.substring(original.lastIndexOf('.')).toLowerCase();
+        }
+        String stored = UUID.randomUUID().toString().replace("-", "") + ext;
+        Path target = dir.resolve(stored);
+
+        file.transferTo(target);
+
+        // 브라우저가 접근할 URL (/uploads/** 는 WebMvcConfig에서 매핑)
+        String url = "/uploads/" + today.getYear()
+                + "/" + String.format("%02d", today.getMonthValue())
+                + "/" + String.format("%02d", today.getDayOfMonth())
+                + "/" + stored;
+
+        return new UploadResult(url, original, file.getSize(), ct);
+    }
+
+    public record UploadResult(String url, String originalName, long size, String contentType) {}
+
+    private Path uploadsRoot() {
+        return Path.of(uploadDir).toAbsolutePath().normalize();
+    }
+
+    /** HTML 본문에 들어있는 /uploads/... URL들을 파일 경로로 매핑해서 반환 */
+    private Set<Path> extractUploadPaths(String html) {
+        if (html == null || html.isBlank()) return Set.of();
+        var m = SRC_OR_HREF.matcher(html);
+        Set<Path> out = new java.util.HashSet<>();
+        while (m.find()) {
+            String url = m.group(1);
+            Path p = mapUrlToPath(url);
+            if (p != null) out.add(p);
+        }
+        return out;
+    }
+
+    /** 절대/상대 URL 모두 처리하여 업로드 실제 파일 경로로 변환 (경로 이탈 방지 포함) */
+    private Path mapUrlToPath(String url) {
+        try {
+            String path = url;
+            // 절대 URL이면 path만 뽑기
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                path = URI.create(url).getPath();
+            }
+            if (path == null) return null;
+            // 업로드 경로만 허용
+            if (!path.startsWith("/uploads/")) return null;
+
+            Path root = uploadsRoot();
+            Path file = root.resolve(path.substring("/uploads/".length())).normalize();
+
+            // 경로 이탈 방지: 반드시 root 하위여야 함
+            if (!file.startsWith(root)) return null;
+
+            return file;
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    private void safeDelete(Path p) {
+        try {
+            Files.deleteIfExists(p);
+        } catch (Exception ignore) {
+            // 로그 원하면 추가
+        }
+    }
+
 }

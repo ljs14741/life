@@ -1,8 +1,10 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || '';
+const RichEditor = dynamic(() => import('@/components/RichEditor'), { ssr: false });
 
 type Category = { id: number; code: string; name: string };
 
@@ -11,12 +13,16 @@ function getErrorMessage(e: unknown) {
     try { return JSON.stringify(e); } catch { return String(e); }
 }
 
+// HTML 안의 텍스트가 비어있는지 간단 체크
+const isHtmlEmpty = (html: string) =>
+    !html || !html.replace(/<[^>]*>/g, '').trim();
+
 export default function WritePage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [categoryCode, setCategoryCode] = useState<string>('MISTAKE');
 
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const [content, setContent] = useState('<p></p>'); // HTML
     const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setPassword2] = useState('');
@@ -45,7 +51,7 @@ export default function WritePage() {
         if (!password || password.trim().length < 3) return '비밀번호는 최소 3자입니다.';
         if (password !== password2) return '비밀번호 확인이 일치하지 않습니다.';
         if (!title.trim()) return '제목을 입력하세요.';
-        if (!content.trim()) return '내용을 입력하세요.';
+        if (isHtmlEmpty(content)) return '내용을 입력하세요.';
         return null;
     };
 
@@ -65,7 +71,7 @@ export default function WritePage() {
                     clientReqId,
                     categoryCode,
                     title,
-                    content,
+                    content,               // ✅ HTML로 전송
                     authorNick: nickname,
                     password,
                 }),
@@ -86,7 +92,6 @@ export default function WritePage() {
         }
     };
 
-    // 공통 입력 클래스 (iOS 대응: text-[16px], 명시적 배경/색 지정)
     const inputCls =
         'mt-1 w-full rounded border p-2 text-[16px] ' +
         'bg-white text-neutral-900 placeholder:text-neutral-400 ' +
@@ -96,7 +101,6 @@ export default function WritePage() {
 
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-black">
-            {/* 메인 컨텐츠가 장식보다 위에 오도록 */}
             <main className="relative z-10 max-w-3xl mx-auto p-4">
                 <h1 className="text-2xl font-bold mb-4">글쓰기</h1>
 
@@ -168,16 +172,12 @@ export default function WritePage() {
                         />
                     </div>
 
-                    {/* 내용 */}
+                    {/* 내용 (리치 에디터) */}
                     <div>
                         <label className="block text-sm font-medium">내용</label>
-                        <textarea
-                            className={inputCls + ' min-h-[200px]'}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            maxLength={20000}
-                            required
-                        />
+                        <div className="mt-1">
+                            <RichEditor value={content} onChange={setContent} />
+                        </div>
                     </div>
 
                     <button

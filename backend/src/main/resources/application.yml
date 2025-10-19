@@ -13,6 +13,10 @@ spring:
     url: jdbc:mysql://localhost:3306/life?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
     password: 87654321
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 
   jpa:
     hibernate:
@@ -22,3 +26,6 @@ spring:
       hibernate:
         format_sql: true
         jdbc.time_zone: Asia/Seoul
+
+upload:
+  dir: ./uploads
