@@ -40,8 +40,6 @@ body {
 
 .tiptap p { margin: 0; }
 .tiptap p + p { margin-top: .5rem; } /* 문단 사이 간격만 8px 정도 */
-.tiptap img, .tiptap video {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
+.tiptap video { width: 100%; max-width: 100%; height: auto; }
+/* 원하면 최대 높이도 제한 */
+.tiptap video { max-height: 480px; object-fit: contain; }
