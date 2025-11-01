@@ -100,11 +100,12 @@ export default function Home() {
             <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
                 {/* 상단 */}
                 <section className="mx-auto max-w-6xl px-4 pt-6">
-                    <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80 flex items-center justify-between">
+                    <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80
+                                    flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <h2 className="text-lg font-semibold">인생 망한 모임 - 인생 망한 사람들 썰 풀고 가자</h2>
                         <a
                             href="/write"
-                            className="inline-block rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
+                            className="inline-block w-full sm:w-auto text-center rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
               bg-neutral-900 text-white hover:opacity-90 active:opacity-80
               dark:bg-white dark:text-black"
                         >

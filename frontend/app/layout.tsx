@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 crossOrigin="anonymous"
             />
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-neutral-900 dark:bg-black dark:text-white`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-neutral-900 dark:bg-black dark:text-white overflow-x-hidden`}>
         <Header />
         <main>{children}</main>
         <Footer />

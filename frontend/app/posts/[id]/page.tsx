@@ -254,7 +254,7 @@ export default function PostDetail() {
     if (!post) return <div className="p-4">글을 찾을 수 없습니다.</div>;
 
     return (
-        <div className="min-h-screen bg-neutral-50">
+        <div className="min-h-screen bg-neutral-50 dark:bg-black">
             <main className="max-w-3xl mx-auto p-4">
                 {/* 제목 + 우측 액션 */}
                 <div className="flex items-start justify-between gap-4">
@@ -279,7 +279,8 @@ export default function PostDetail() {
                     </div>
 
                     <div className="shrink-0 flex gap-2">
-                        <button onClick={() => setShowEdit(true)} className="px-3 py-2 rounded bg-neutral-800 text-white">
+                        <button onClick={() => setShowEdit(true)}
+                                className="px-3 py-2 rounded bg-neutral-800 text-white">
                             수정
                         </button>
                         <button onClick={() => setShowDelete(true)} className="px-3 py-2 rounded bg-red-600 text-white">
@@ -353,7 +354,7 @@ export default function PostDetail() {
                         {comments.map((c) => (
                             <li key={c.id} className="rounded border border-neutral-200 bg-white p-3">
                                 <div className="flex items-start justify-between gap-3">
-                                <div className="text-sm text-neutral-600">
+                                    <div className="text-sm text-neutral-600">
                                         <span className="font-semibold text-neutral-900">{c.nickname}</span>{' '}
                                         <span className="text-neutral-400">{c.createDate}</span>
                                         {c.updateYn === 'Y' && <span className="ml-1 text-neutral-400">(수정됨)</span>}
@@ -394,8 +395,11 @@ export default function PostDetail() {
                                 onChange={(e) => setPwForEdit(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setShowEdit(false)} className="px-3 py-2 rounded border">취소</button>
-                                <button onClick={verifyThenGoEdit} className="px-3 py-2 rounded bg-neutral-800 text-white">확인</button>
+                                <button onClick={() => setShowEdit(false)} className="px-3 py-2 rounded border">취소
+                                </button>
+                                <button onClick={verifyThenGoEdit}
+                                        className="px-3 py-2 rounded bg-neutral-800 text-white">확인
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -414,8 +418,10 @@ export default function PostDetail() {
                                 onChange={(e) => setPwForDelete(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setShowDelete(false)} className="px-3 py-2 rounded border">취소</button>
-                                <button onClick={doDelete} className="px-3 py-2 rounded bg-red-600 text-white">삭제</button>
+                                <button onClick={() => setShowDelete(false)} className="px-3 py-2 rounded border">취소
+                                </button>
+                                <button onClick={doDelete} className="px-3 py-2 rounded bg-red-600 text-white">삭제
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -439,8 +445,11 @@ export default function PostDetail() {
                                 onChange={(e) => setEditCommentPw(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setEditCommentId(null)} className="px-3 py-2 rounded border">취소</button>
-                                <button onClick={doEditComment} className="px-3 py-2 rounded bg-neutral-800 text-white">저장</button>
+                                <button onClick={() => setEditCommentId(null)} className="px-3 py-2 rounded border">취소
+                                </button>
+                                <button onClick={doEditComment}
+                                        className="px-3 py-2 rounded bg-neutral-800 text-white">저장
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -459,8 +468,12 @@ export default function PostDetail() {
                                 onChange={(e) => setDeleteCommentPw(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setDeleteCommentId(null)} className="px-3 py-2 rounded border">취소</button>
-                                <button onClick={doDeleteComment} className="px-3 py-2 rounded bg-red-600 text-white">삭제</button>
+                                <button onClick={() => setDeleteCommentId(null)}
+                                        className="px-3 py-2 rounded border">취소
+                                </button>
+                                <button onClick={doDeleteComment}
+                                        className="px-3 py-2 rounded bg-red-600 text-white">삭제
+                                </button>
                             </div>
                         </div>
                     </div>
