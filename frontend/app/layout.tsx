@@ -4,6 +4,8 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Script from "next/script";
+import { ChatProvider } from "@/app/chat/ChatProvider";
+import ChatDock from "@/components/chat/ChatDock";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -81,9 +83,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-neutral-900 dark:bg-black dark:text-white overflow-x-hidden`}>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <ChatProvider>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+            <ChatDock /> {/* ◀ ChatDock을 여기에 추가 */}
+        </ChatProvider>
         </body>
         </html>
     );

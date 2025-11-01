@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import ChatDock from '@/components/chat/ChatDock';
-import { ChatProvider } from './chat/ChatProvider';
+import HomeHero from '@/components/HomeHero';
 
 const API = process.env.NEXT_PUBLIC_API_BASE || '';
 
@@ -96,105 +95,98 @@ export default function Home() {
     };
 
     return (
-        <ChatProvider>
-            <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-                {/* 상단 */}
-                <section className="mx-auto max-w-6xl px-4 pt-6">
-                    <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80
+        <>
+        <HomeHero />
+        <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
+            {/* 상단 (수정된 버전) */}
+            <section className="mx-auto max-w-6xl px-4 pt-2">
+                <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80
                                     flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h2 className="text-lg font-semibold">인생 망한 모임 - 인생 망한 사람들 썰 풀고 가자</h2>
-                        <a
-                            href="/write"
-                            className="inline-block w-full sm:w-auto text-center rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
+                    <h2 className="text-lg font-semibold">인생 망한 모임 - 인생 망한 사람들 썰 풀고 가자</h2>
+                    <a
+                        href="/write"
+                        className="inline-block w-full sm:w-auto text-center rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5
               bg-neutral-900 text-white hover:opacity-90 active:opacity-80
               dark:bg-white dark:text-black"
-                        >
-                            글 쓰기
-                        </a>
-                    </div>
-                </section>
+                    >
+                        글 쓰기
+                    </a>
+                </div>
+            </section>
 
-                {/* 목록 + 탭 */}
-                <section className="mx-auto max-w-6xl px-4 pb-20 pt-6">
-                    {/* 탭 */}
-                    <div className="mb-4 flex items-center gap-2 text-sm">
-                        {[
-                            { key: 'best', label: '베스트' },
-                            { key: 'trending', label: '실시간' },
-                            { key: 'latest', label: '최신' },
-                        ].map((t) => (
-                            <button
-                                key={t.key}
-                                onClick={() => setTab(t.key as 'best' | 'trending' | 'latest')}
-                                className={`rounded-full px-3 py-1 ring-1 ring-black/10 dark:ring-white/10 transition
+            {/* 목록 + 탭 */}
+            <section className="mx-auto max-w-6xl px-4 pb-20 pt-6">
+                {/* ... (탭, 카드 그리드 등 나머지 코드는 동일) ... */}
+                <div className="mb-4 flex items-center gap-2 text-sm">
+                    {[
+                        { key: 'best', label: '베스트' },
+                        { key: 'trending', label: '실시간' },
+                        { key: 'latest', label: '최신' },
+                    ].map((t) => (
+                        <button
+                            key={t.key}
+                            onClick={() => setTab(t.key as 'best' | 'trending' | 'latest')}
+                            className={`rounded-full px-3 py-1 ring-1 ring-black/10 dark:ring-white/10 transition
                   ${tab === t.key
-                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                        <span className="ml-auto text-xs text-neutral-500">
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                                : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
+                    <span className="ml-auto text-xs text-neutral-500">
               {isLoading ? '불러오는 중…' : error ? '불러오기 실패' : `${data?.length ?? 0}개`}
             </span>
-                    </div>
-
-                    {/* 카드 그리드 */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {(data ?? []).map((p) => {
-                            const liked = likedIds.has(p.id);
-                            const preview = htmlToPlainPreview(p.content, 140);
-                            return (
-                                <div
-                                    key={p.id}
-                                    className="rounded-2xl border border-neutral-200/70 p-4 hover:bg-neutral-50
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {(data ?? []).map((p) => {
+                        const liked = likedIds.has(p.id);
+                        const preview = htmlToPlainPreview(p.content, 140);
+                        return (
+                            <div
+                                key={p.id}
+                                className="rounded-2xl border border-neutral-200/70 p-4 hover:bg-neutral-50
                     dark:border-neutral-800 dark:hover:bg-neutral-900"
-                                >
-                                    <a href={`/posts/${p.id}`} className="block">
-                                        <div className="text-xs flex items-center gap-2">
+                            >
+                                <a href={`/posts/${p.id}`} className="block">
+                                    <div className="text-xs flex items-center gap-2">
                       <span className="rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-800">
                         {p.categoryName}
                       </span>
-                                        </div>
-                                        <h4 className="mt-2 line-clamp-1 text-lg font-semibold">{p.title}</h4>
-                                        {/* ✅ HTML을 텍스트로 바꾼 미리보기 */}
-                                        <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
-                                            {preview}
-                                        </p>
-                                    </a>
-
-                                    <div className="mt-3 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                                        <span>{p.authorNick}</span>
-                                        <div className="flex items-center gap-3">
-                                            <span title="조회수">👁 {p.views ?? 0}</span>
-                                            <button
-                                                onClick={() => toggleLike(p.id)}
-                                                className={`inline-flex items-center gap-1 transition ${
-                                                    liked ? 'text-red-600' : 'text-neutral-500'
-                                                }`}
-                                                aria-label="좋아요"
-                                                title="좋아요"
-                                            >
-                                                <span>♥</span>
-                                                <span>{p.likes ?? 0}</span>
-                                            </button>
-                                        </div>
+                                    </div>
+                                    <h4 className="mt-2 line-clamp-1 text-lg font-semibold">{p.title}</h4>
+                                    <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">
+                                        {preview}
+                                    </p>
+                                </a>
+                                <div className="mt-3 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                                    <span>{p.authorNick}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span title="조회수">👁 {p.views ?? 0}</span>
+                                        <button
+                                            onClick={() => toggleLike(p.id)}
+                                            className={`inline-flex items-center gap-1 transition ${
+                                                liked ? 'text-red-600' : 'text-neutral-500'
+                                            }`}
+                                            aria-label="좋아요"
+                                            title="좋아요"
+                                        >
+                                            <span>♥</span>
+                                            <span>{p.likes ?? 0}</span>
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
-
-                        {/* Empty state */}
-                        {!isLoading && !error && (data?.length ?? 0) === 0 && (
-                            <div className="col-span-full rounded-xl border border-dashed p-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-                                아직 글이 없어요. 첫 글을 남겨보세요! → <a className="underline" href="/write">글쓰기</a>
                             </div>
-                        )}
-                    </div>
-                </section>
-            </main>
-
-            <ChatDock />
-        </ChatProvider>
+                        );
+                    })}
+                    {!isLoading && !error && (data?.length ?? 0) === 0 && (
+                        <div className="col-span-full rounded-xl border border-dashed p-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                            아직 글이 없어요. 첫 글을 남겨보세요! → <a className="underline" href="/write">글쓰기</a>
+                        </div>
+                    )}
+                </div>
+            </section>
+        </main>
+        </>
     );
 }
