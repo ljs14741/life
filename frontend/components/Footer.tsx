@@ -11,7 +11,7 @@ export default function Footer() {
                     <div>
                         <div className="font-semibold text-neutral-900 dark:text-neutral-100">인생망한모임</div>
                         <p className="mt-2 max-w-md leading-6">
-                            익명으로 실수담/조언을 나누는 커뮤니티. 서로의 망함을 공유하며 웃어넘겨요^^.
+                            인생 망한 사람들, 인생 개망·존망해서 씁쓸한 사람들끼리 모이는 커뮤니티. 익명으로 글 쓰고 공감 받으세요.
                         </p>
                     </div>
 

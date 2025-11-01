@@ -16,11 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
     metadataBase: new URL("https://life.binaryworld.kr"),
-    title: "인생망한모임",
-    description: "익명으로 실수담/조언을 나누는 커뮤니티",
+    title: "인생 망한 사람들의 모임",
+    description: '인생 망한 사람, 인생 개망해서 씁쓸한 사람들끼리 모이는 커뮤니티. 익명으로 글 쓰고 공감 받으세요.',
+    keywords: ['인망모', '인생망한모임', '인생 망한 사람', '인생 망한 사람들', '인생 개망', '망한 인생 커뮤니티', '인생존망'],
     openGraph: {
         title: "인생망한모임",
-        description: "익명으로 실수담/조언을 나누는 커뮤니티",
+        description: '인생 망한 사람, 인생 개망해서 씁쓸한 사람들끼리 모이는 커뮤니티. 익명으로 글 쓰고 공감 받으세요.',
         url: "https://life.binaryworld.kr",
         siteName: "인생망한모임",
         locale: "ko_KR",

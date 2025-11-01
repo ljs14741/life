@@ -101,7 +101,7 @@ export default function Home() {
                 {/* 상단 */}
                 <section className="mx-auto max-w-6xl px-4 pt-6">
                     <div className="rounded-3xl border border-neutral-200/60 p-5 shadow-sm dark:border-neutral-800/80 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold">인생망한모임</h2>
+                        <h2 className="text-lg font-semibold">인생 망한 모임 - 인생 망한 사람들 썰 풀고 가자</h2>
                         <a
                             href="/write"
                             className="inline-block rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5

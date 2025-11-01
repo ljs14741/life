@@ -289,13 +289,18 @@ export default function PostDetail() {
                 </div>
 
                 <article
-                    className="mt-6 prose prose-neutral max-w-none"
+                    className="mt-6 prose prose-neutral max-w-none
+                                 [&_video]:max-w-[640px]
+                                 [&_video]:w-full
+                                 [&_video]:mx-auto
+                                 [&_video]:max-h-[360px]
+                                 [&_video]:object-contain"
                     dangerouslySetInnerHTML={{__html: post.content}}
                 />
 
                 {/* ---------- 댓글 작성 ---------- */}
                 <section className="mt-10">
-                <h2 className="text-lg font-semibold mb-3">댓글</h2>
+                    <h2 className="text-lg font-semibold mb-3">댓글</h2>
                     <form onSubmit={submitComment} className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <input
