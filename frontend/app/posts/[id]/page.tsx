@@ -320,16 +320,23 @@ export default function PostDetail() {
                                 minLength={3}
                                 required
                             />
-                            <div />
+                            <div/>
                         </div>
                         <textarea
                             className="w-full border rounded p-2 min-h-[100px]"
-                            placeholder="댓글 내용을 입력하세요."
+                            placeholder="댓글 내용을 입력하세요. 심한 욕과 비난은 자제합시다^^"
                             value={cContent}
                             onChange={(e) => setCContent(e.target.value)}
                             maxLength={5000}
                             required
                         />
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                            댓글을 등록하면{' '}
+                            <a href="/legal/guideline" target="_blank" className="underline font-semibold">
+                                커뮤니티 가이드라인
+                            </a>
+                            에 동의하는 것으로 간주합니다.
+                        </div>
                         <div>
                             <button
                                 type="submit"
@@ -346,7 +353,7 @@ export default function PostDetail() {
                         {comments.map((c) => (
                             <li key={c.id} className="rounded border border-neutral-200 bg-white p-3">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="text-sm text-neutral-600">
+                                <div className="text-sm text-neutral-600">
                                         <span className="font-semibold text-neutral-900">{c.nickname}</span>{' '}
                                         <span className="text-neutral-400">{c.createDate}</span>
                                         {c.updateYn === 'Y' && <span className="ml-1 text-neutral-400">(수정됨)</span>}

@@ -28,6 +28,7 @@ export default function Footer() {
                             <div className="mb-2 font-medium text-neutral-900 dark:text-neutral-100">정책</div>
                             <ul className="space-y-1">
                                 <li><Link href="/legal/privacy" className="hover:underline">개인정보처리방침</Link></li>
+                                <li><Link href="/legal/guideline" className="hover:underline">커뮤니티 가이드라인</Link></li>
                                 <li><Link href="/legal/terms" className="hover:underline">이용약관</Link></li>
                                 <li><Link href="/legal/cookies" className="hover:underline">쿠키 안내</Link></li>
                             </ul>
