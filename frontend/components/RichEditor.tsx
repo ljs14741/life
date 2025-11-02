@@ -136,14 +136,14 @@ export default function RichEditor({ value, onChange }: Props) {
         editorProps: {
             attributes: {
                 class:
-                    'tiptap prose prose-neutral max-w-none min-h-[280px] p-3 focus:outline-none',
+                    'tiptap prose prose-neutral dark:prose-invert max-w-none min-h-[280px] p-3 focus:outline-none',
             },
         },
         // React 19/Next 15 하이드레이션 경고 회피
         immediatelyRender: false,
     });
 
-    if (!editor) return <div className="min-h-[280px] border rounded bg-white" />;
+    if (!editor) return <div className="min-h-[280px] border rounded bg-white dark:bg-neutral-900 dark:border-neutral-700" />;
 
     /* ---------- 업로드 공통 ---------- */
     const upload = async (file: File): Promise<string> => {
@@ -208,7 +208,7 @@ export default function RichEditor({ value, onChange }: Props) {
     /* ---------- 상태/가능여부 ---------- */
     const btn = 'px-2 py-1 rounded border text-sm transition select-none';
     const btnOn = 'bg-blue-600 text-white border-blue-600 shadow-sm';
-    const btnOff = 'bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100';
+    const btnOff = 'bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100 dark:bg-neutral-700 dark:text-neutral-200 dark:border-neutral-600 dark:hover:bg-neutral-600';
 
     const setFontSize = (size: string) => {
         if (!size) editor.chain().focus().unsetMark('textStyle').run();
@@ -235,9 +235,10 @@ export default function RichEditor({ value, onChange }: Props) {
     const canH3 = editor.can().chain().focus().toggleHeading({ level: 3 }).run();
 
     return (
-        <div className="border rounded bg-white">
+        <div className="border rounded bg-white dark:border-neutral-700 dark:bg-neutral-900 overflow-hidden">
             {/* Toolbar */}
-            <div className="flex flex-wrap gap-1 px-2 py-2 border-b bg-neutral-50 text-sm">
+            <div
+                className="flex flex-wrap gap-1 px-2 py-2 border-b bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 text-sm">
                 {/* 인라인 */}
                 <button
                     type="button"
@@ -314,7 +315,7 @@ export default function RichEditor({ value, onChange }: Props) {
                 <button
                     type="button"
                     aria-pressed={activeH2}
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    onClick={() => editor.chain().focus().toggleHeading({level: 2}).run()}
                     className={`${btn} ${activeH2 ? btnOn : btnOff}`}
                     disabled={!canH2}
                 >
@@ -324,7 +325,7 @@ export default function RichEditor({ value, onChange }: Props) {
                 <button
                     type="button"
                     aria-pressed={activeH3}
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                    onClick={() => editor.chain().focus().toggleHeading({level: 3}).run()}
                     className={`${btn} ${activeH3 ? btnOn : btnOff}`}
                     disabled={!canH3}
                 >
@@ -363,12 +364,12 @@ export default function RichEditor({ value, onChange }: Props) {
                 <input
                     type="color"
                     onChange={e => editor.chain().focus().setColor(e.target.value).run()}
-                    className="ml-2 h-8 w-12 border rounded"
+                    className="ml-2 h-8 w-12 border rounded dark:border-neutral-700"
                     title="글자 색상"
                 />
 
                 <select
-                    className="ml-1 h-8 border rounded px-2"
+                    className="ml-1 h-8 border rounded px-2 dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-200"
                     defaultValue=""
                     onChange={e => setFontSize(e.target.value)}
                     title="글자 크기"
@@ -429,33 +430,33 @@ export default function RichEditor({ value, onChange }: Props) {
                 {/* 업로드 */}
                 <label className={`${btn} ${btnOff} cursor-pointer`} title="이미지 업로드">
                     이미지
-                    <input type="file" accept="image/*" onChange={onPickImage} className="hidden" />
+                    <input type="file" accept="image/*" onChange={onPickImage} className="hidden"/>
                 </label>
 
                 {/* 이미지 크기 퀵 버튼 */}
                 <span className="ml-1 inline-flex items-center gap-1">
-          <span className="text-xs text-neutral-500">이미지 크기:</span>
-          <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('100%')}>
-            100%
-          </button>
-          <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('75%')}>
-            75%
-          </button>
-          <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('50%')}>
-            50%
-          </button>
-          <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth(undefined)}>
-            원본
-          </button>
-        </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">이미지 크기:</span>
+                  <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('100%')}>
+                    100%
+                  </button>
+                  <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('75%')}>
+                    75%
+                  </button>
+                  <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth('50%')}>
+                    50%
+                  </button>
+                  <button type="button" className={`${btn} ${btnOff}`} onClick={() => setImgWidth(undefined)}>
+                    원본
+                  </button>
+                </span>
 
                 <label className={`${btn} ${btnOff} cursor-pointer`} title="동영상 업로드">
                     동영상
-                    <input type="file" accept="video/*" onChange={onPickVideo} className="hidden" />
+                    <input type="file" accept="video/*" onChange={onPickVideo} className="hidden"/>
                 </label>
             </div>
 
-            <EditorContent editor={editor} />
+            <EditorContent editor={editor}/>
         </div>
     );
 }

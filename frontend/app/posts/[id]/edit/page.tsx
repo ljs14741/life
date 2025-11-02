@@ -98,17 +98,17 @@ export default function PostEdit() {
         }
     };
 
-    if (loading) return <div className="p-4">로딩 중…</div>;
+    if (loading) return <div className="p-4 dark:text-white">로딩 중…</div>;
 
     return (
-        <div className="min-h-screen bg-neutral-50">
+        <div className="min-h-screen bg-neutral-50 dark:bg-black">
             <main className="max-w-3xl mx-auto p-4">
-                <h1 className="text-2xl font-bold mb-4">글 수정</h1>
+                <h1 className="text-2xl font-bold mb-4 dark:text-white">글 수정</h1>
                 <form onSubmit={onSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium">제목</label>
+                        <label className="block text-sm font-medium dark:text-neutral-300">제목</label>
                         <input
-                            className="mt-1 w-full border rounded p-2"
+                            className="mt-1 w-full border rounded p-2 bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             maxLength={120}
@@ -117,9 +117,9 @@ export default function PostEdit() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium">내용</label>
+                        <label className="block text-sm font-medium dark:text-neutral-300">내용</label>
                         <div className="mt-1">
-                            <RichEditor value={content} onChange={setContent} />
+                            <RichEditor value={content} onChange={setContent}/>
                         </div>
                     </div>
 
