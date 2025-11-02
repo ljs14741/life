@@ -250,8 +250,8 @@ export default function PostDetail() {
         }
     };
 
-    if (loading) return <div className="p-4">로딩 중…</div>;
-    if (!post) return <div className="p-4">글을 찾을 수 없습니다.</div>;
+    if (loading) return <div className="p-4 dark:text-white">로딩 중…</div>;
+    if (!post) return <div className="p-4 dark:text-white">글을 찾을 수 없습니다.</div>;
 
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-black">
@@ -259,8 +259,8 @@ export default function PostDetail() {
                 {/* 제목 + 우측 액션 */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold">{post.title}</h1>
-                        <div className="text-sm text-neutral-500 mt-1 flex flex-wrap items-center gap-x-2">
+                        <h1 className="text-2xl font-bold dark:text-white">{post.title}</h1>
+                        <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex flex-wrap items-center gap-x-2">
                             <span>{post.categoryName}</span>
                             <span>· {post.authorNick}</span>
                             <span>· {post.createDate}</span>
@@ -268,7 +268,7 @@ export default function PostDetail() {
                             <span className="ml-2">· 👁 {post.views ?? 0}</span>
                             <button
                                 onClick={toggleLike}
-                                className={`ml-2 inline-flex items-center gap-1 ${liked ? 'text-red-600' : 'text-neutral-500'}`}
+                                className={`ml-2 inline-flex items-center gap-1 ${liked ? 'text-red-600' : 'text-neutral-500 dark:text-neutral-400'}`}
                                 aria-label="좋아요"
                                 title="좋아요"
                             >
@@ -279,8 +279,7 @@ export default function PostDetail() {
                     </div>
 
                     <div className="shrink-0 flex gap-2">
-                        <button onClick={() => setShowEdit(true)}
-                                className="px-3 py-2 rounded bg-neutral-800 text-white">
+                        <button onClick={() => setShowEdit(true)} className="px-3 py-2 rounded bg-neutral-800 text-white">
                             수정
                         </button>
                         <button onClick={() => setShowDelete(true)} className="px-3 py-2 rounded bg-red-600 text-white">
@@ -301,11 +300,11 @@ export default function PostDetail() {
 
                 {/* ---------- 댓글 작성 ---------- */}
                 <section className="mt-10">
-                    <h2 className="text-lg font-semibold mb-3">댓글</h2>
+                    <h2 className="text-lg font-semibold mb-3 dark:text-white">댓글</h2>
                     <form onSubmit={submitComment} className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <input
-                                className="border rounded p-2"
+                                className="border rounded p-2 bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 placeholder="닉네임"
                                 value={cNickname}
                                 onChange={(e) => setCNickname(e.target.value)}
@@ -314,17 +313,17 @@ export default function PostDetail() {
                             />
                             <input
                                 type="password"
-                                className="border rounded p-2"
+                                className="border rounded p-2 bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 placeholder="비밀번호 (최소 3자)"
                                 value={cPassword}
                                 onChange={(e) => setCPassword(e.target.value)}
                                 minLength={3}
                                 required
                             />
-                            <div/>
+                            <div />
                         </div>
                         <textarea
-                            className="w-full border rounded p-2 min-h-[100px]"
+                            className="w-full border rounded p-2 min-h-[100px] bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                             placeholder="댓글 내용을 입력하세요. 심한 욕과 비난은 자제합시다^^"
                             value={cContent}
                             onChange={(e) => setCContent(e.target.value)}
@@ -333,16 +332,16 @@ export default function PostDetail() {
                         />
                         <div className="text-xs text-neutral-500 dark:text-neutral-400">
                             댓글을 등록하면{' '}
-                            <a href="/legal/guideline" target="_blank" className="underline font-semibold">
+                            <a href="/legal/guidelines" target="_blank" className="underline font-semibold">
                                 커뮤니티 가이드라인
                             </a>
                             에 동의하는 것으로 간주합니다.
                         </div>
-                        <div>
+                        <div className="mt-2">
                             <button
                                 type="submit"
                                 disabled={submittingComment}
-                                className="rounded bg-neutral-900 text-white px-4 py-2 disabled:opacity-50"
+                                className="rounded bg-neutral-900 text-white px-4 py-2 disabled:opacity-50 dark:bg-white dark:text-black"
                             >
                                 {submittingComment ? '등록 중…' : '댓글 등록'}
                             </button>
@@ -355,11 +354,9 @@ export default function PostDetail() {
                             <li key={c.id} className="rounded border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="text-sm text-neutral-600 dark:text-neutral-400">
-                                            <span
-                                                className="font-semibold text-neutral-900 dark:text-neutral-100">{c.nickname}</span>{' '}
-                                        <span
-                                            className="text-neutral-400 dark:text-neutral-500">{c.createDate}</span>
-                                        {c.updateYn === 'Y' && <span className="ml-1 text-neutral-400">(수정됨)</span>}
+                                        <span className="font-semibold text-neutral-900 dark:text-neutral-100">{c.nickname}</span>{' '}
+                                        <span className="text-neutral-400 dark:text-neutral-500">{c.createDate}</span>
+                                        {c.updateYn === 'Y' && <span className="ml-1 text-neutral-400 dark:text-neutral-500">(수정됨)</span>}
                                     </div>
                                     <div className="shrink-0 flex gap-2">
                                         <button
@@ -371,60 +368,54 @@ export default function PostDetail() {
                                         <button
                                             onClick={() => openDeleteComment(c)}
                                             className="px-2 py-1 rounded border text-sm text-red-600 border-red-300 dark:border-red-700 dark:text-red-500"
-                                            >
-                                                삭제
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 whitespace-pre-wrap text-sm">{c.content}</div>
-                                </li>
-                                ))}
-                            </ul>
-                            </section>
-
-                        {/* -------- 모달들 -------- */}
-
-                        {/* 글 수정 비번 */}
-                        {showEdit && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                                <div className="bg-white rounded p-4 w-full max-w-sm dark:bg-neutral-900">
-                                    <h2 className="text-lg font-bold mb-3 dark:text-white">비밀번호 확인</h2>
-                                    <input
-                                        type="password"
-                                        className="w-full border rounded p-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
-                                        placeholder="비밀번호"
-                                        value={pwForEdit}
-                                        onChange={(e) => setPwForEdit(e.target.value)}
-                                    />
-                                    <div className="mt-4 flex justify-end gap-2">
-                                        <button onClick={() => setShowEdit(false)}
-                                                className="px-3 py-2 rounded border dark:border-neutral-700 dark:text-neutral-200">취소
-                                        </button>
-                                        <button onClick={verifyThenGoEdit}
-                                                className="px-3 py-2 rounded bg-neutral-800 text-white">확인
+                                        >
+                                            삭제
                                         </button>
                                     </div>
                                 </div>
+                                <div className="mt-2 whitespace-pre-wrap text-sm dark:text-neutral-200">{c.content}</div>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* -------- 모달들 (전부 다크모드 적용) -------- */}
+
+                {/* 글 수정 비번 */}
+                {showEdit && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="bg-white rounded p-4 w-full max-w-sm dark:bg-neutral-900">
+                            <h2 className="text-lg font-bold mb-3 dark:text-white">비밀번호 확인</h2>
+                            <input
+                                type="password"
+                                className="w-full border rounded p-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
+                                placeholder="비밀번호"
+                                value={pwForEdit}
+                                onChange={(e) => setPwForEdit(e.target.value)}
+                            />
+                            <div className="mt-4 flex justify-end gap-2">
+                                <button onClick={() => setShowEdit(false)} className="px-3 py-2 rounded border dark:border-neutral-700 dark:text-neutral-200">취소</button>
+                                <button onClick={verifyThenGoEdit} className="px-3 py-2 rounded bg-neutral-800 text-white">확인</button>
                             </div>
-                        )}
+                        </div>
+                    </div>
+                )}
 
                 {/* 글 삭제 비번 */}
                 {showDelete && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-white rounded p-4 w-full max-w-sm">
-                            <h2 className="text-lg font-bold mb-3">비밀번호 확인</h2>
+                        <div className="bg-white rounded p-4 w-full max-w-sm dark:bg-neutral-900">
+                            <h2 className="text-lg font-bold mb-3 dark:text-white">비밀번호 확인</h2>
                             <input
                                 type="password"
-                                className="w-full border rounded p-2"
+                                className="w-full border rounded p-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 placeholder="비밀번호"
                                 value={pwForDelete}
                                 onChange={(e) => setPwForDelete(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setShowDelete(false)} className="px-3 py-2 rounded border">취소
-                                </button>
-                                <button onClick={doDelete} className="px-3 py-2 rounded bg-red-600 text-white">삭제
-                                </button>
+                                <button onClick={() => setShowDelete(false)} className="px-3 py-2 rounded border dark:border-neutral-700 dark:text-neutral-200">취소</button>
+                                <button onClick={doDelete} className="px-3 py-2 rounded bg-red-600 text-white">삭제</button>
                             </div>
                         </div>
                     </div>
@@ -433,26 +424,23 @@ export default function PostDetail() {
                 {/* 댓글 수정 모달 */}
                 {editCommentId !== null && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-white rounded p-4 w-full max-w-md">
-                            <h2 className="text-lg font-bold mb-3">댓글 수정</h2>
+                        <div className="bg-white rounded p-4 w-full max-w-md dark:bg-neutral-900">
+                            <h2 className="text-lg font-bold mb-3 dark:text-white">댓글 수정</h2>
                             <textarea
-                                className="w-full border rounded p-2 min-h-[120px]"
+                                className="w-full border rounded p-2 min-h-[120px] dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 value={editCommentContent}
                                 onChange={(e) => setEditCommentContent(e.target.value)}
                             />
                             <input
                                 type="password"
-                                className="w-full border rounded p-2 mt-3"
+                                className="w-full border rounded p-2 mt-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 placeholder="비밀번호"
                                 value={editCommentPw}
                                 onChange={(e) => setEditCommentPw(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setEditCommentId(null)} className="px-3 py-2 rounded border">취소
-                                </button>
-                                <button onClick={doEditComment}
-                                        className="px-3 py-2 rounded bg-neutral-800 text-white">저장
-                                </button>
+                                <button onClick={() => setEditCommentId(null)} className="px-3 py-2 rounded border dark:border-neutral-700 dark:text-neutral-200">취소</button>
+                                <button onClick={doEditComment} className="px-3 py-2 rounded bg-neutral-800 text-white">저장</button>
                             </div>
                         </div>
                     </div>
@@ -461,22 +449,18 @@ export default function PostDetail() {
                 {/* 댓글 삭제 모달 */}
                 {deleteCommentId !== null && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-white rounded p-4 w-full max-w-sm">
-                            <h2 className="text-lg font-bold mb-3">댓글 삭제</h2>
+                        <div className="bg-white rounded p-4 w-full max-w-sm dark:bg-neutral-900">
+                            <h2 className="text-lg font-bold mb-3 dark:text-white">댓글 삭제</h2>
                             <input
                                 type="password"
-                                className="w-full border rounded p-2"
+                                className="w-full border rounded p-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder:text-neutral-500"
                                 placeholder="비밀번호"
                                 value={deleteCommentPw}
                                 onChange={(e) => setDeleteCommentPw(e.target.value)}
                             />
                             <div className="mt-4 flex justify-end gap-2">
-                                <button onClick={() => setDeleteCommentId(null)}
-                                        className="px-3 py-2 rounded border">취소
-                                </button>
-                                <button onClick={doDeleteComment}
-                                        className="px-3 py-2 rounded bg-red-600 text-white">삭제
-                                </button>
+                                <button onClick={() => setDeleteCommentId(null)} className="px-3 py-2 rounded border dark:border-neutral-700 dark:text-neutral-200">취소</button>
+                                <button onClick={doDeleteComment} className="px-3 py-2 rounded bg-red-600 text-white">삭제</button>
                             </div>
                         </div>
                     </div>

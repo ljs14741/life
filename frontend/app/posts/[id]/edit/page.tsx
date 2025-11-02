@@ -127,14 +127,14 @@ export default function PostEdit() {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+                            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50 dark:bg-white dark:text-black"
                         >
                             {submitting ? '수정 중…' : '저장'}
                         </button>
                         <button
                             type="button"
                             onClick={() => (window.location.href = `/posts/${id}`)}
-                            className="border rounded px-4 py-2"
+                            className="border rounded px-4 py-2 dark:border-neutral-700 dark:text-neutral-200"
                         >
                             취소
                         </button>

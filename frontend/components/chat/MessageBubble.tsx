@@ -3,6 +3,27 @@
 import { ChatMessage } from '@/lib/chat/types';
 import clsx from 'clsx';
 
+function formatChatTimestamp(epochMs?: number): string {
+    if (!epochMs) return '';
+
+    const d = new Date(epochMs);
+
+    // YYYY-MM-DD
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+
+    // 오후/오전 H:MM:SS
+    const hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const seconds = d.getSeconds().toString().padStart(2, '0');
+
+    const ampm = hours >= 12 ? '오후' : '오전';
+    const displayHours = (hours % 12 || 12).toString(); // 12시 형식
+
+    return `${year}-${month}-${day} ${ampm} ${displayHours}:${minutes}:${seconds}`;
+}
+
 export default function MessageBubble({ msg }: { msg: ChatMessage }) {
     const isUser = msg.role === 'user';
     const isSystem = msg.role === 'system';
@@ -27,7 +48,7 @@ export default function MessageBubble({ msg }: { msg: ChatMessage }) {
                 )}
                 {msg.text}
                 <div className="mt-1 text-[10px] opacity-70">
-                    {new Date(msg.createdAt).toLocaleTimeString()}
+                    {formatChatTimestamp(msg.createdAt)}
                 </div>
             </div>
         </div>
