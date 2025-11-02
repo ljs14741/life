@@ -163,17 +163,13 @@ export default function Home() {
                                     <span>{p.authorNick}</span>
                                     <div className="flex items-center gap-3">
                                         <span title="조회수">👁 {p.views ?? 0}</span>
-                                        <button
-                                            onClick={() => toggleLike(p.id)}
-                                            className={`inline-flex items-center gap-1 transition ${
-                                                liked ? 'text-red-600' : 'text-neutral-500'
-                                            }`}
-                                            aria-label="좋아요"
-                                            title="좋아요"
+                                        <div
+                                            className="inline-flex items-center gap-1 text-red-600 dark:text-red-500"
+                                            title="좋아요 수"
                                         >
                                             <span>♥</span>
                                             <span>{p.likes ?? 0}</span>
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

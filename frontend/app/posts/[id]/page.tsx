@@ -268,7 +268,13 @@ export default function PostDetail() {
                             <span className="ml-2">· 👁 {post.views ?? 0}</span>
                             <button
                                 onClick={toggleLike}
-                                className={`ml-2 inline-flex items-center gap-1 ${liked ? 'text-red-600' : 'text-neutral-500 dark:text-neutral-400'}`}
+                                className={`ml-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 
+                                            text-sm font-medium cursor-pointer transition-all border
+                                            ${
+                                    liked
+                                        ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900 dark:border-red-700 dark:text-red-500'
+                                        : 'bg-white hover:bg-neutral-100 border-neutral-300 text-neutral-500 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400'
+                                }`}
                                 aria-label="좋아요"
                                 title="좋아요"
                             >
@@ -288,8 +294,9 @@ export default function PostDetail() {
                     </div>
                 </div>
 
+                {/* ▼▼▼ [수정됨] 상단 경계선 추가 (mt-6 pt-6 border-t) ▼▼▼ */}
                 <article
-                    className="mt-6 prose prose-neutral dark:prose-invert max-w-none
+                    className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-800 prose prose-neutral dark:prose-invert max-w-none
                                  [&_video]:max-w-[640px]
                                  [&_video]:w-full
                                  [&_video]:mx-auto
@@ -297,6 +304,28 @@ export default function PostDetail() {
                                  [&_video]:object-contain"
                     dangerouslySetInnerHTML={{__html: post.content}}
                 />
+                {/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
+
+
+                {/* 글 하단 '좋아요' 버튼 */}
+                <div className="mt-10 pt-8 border-t border-neutral-200 dark:border-neutral-800 flex justify-center">
+                    <button
+                        onClick={toggleLike}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 
+                                    text-base font-medium cursor-pointer transition-all border
+                                    ${
+                            liked
+                                ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900 dark:border-red-700 dark:text-red-500'
+                                : 'bg-white hover:bg-neutral-100 border-neutral-300 text-neutral-500 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400'
+                        }`}
+                        aria-label="좋아요"
+                        title="좋아요"
+                    >
+                        <span>♥</span>
+                        <span className="ml-1">좋아요 {post.likes ?? 0}</span>
+                    </button>
+                </div>
+
 
                 {/* ---------- 댓글 작성 ---------- */}
                 <section className="mt-10">
@@ -332,7 +361,7 @@ export default function PostDetail() {
                         />
                         <div className="text-xs text-neutral-500 dark:text-neutral-400">
                             댓글을 등록하면{' '}
-                            <a href="/legal/guidelines" target="_blank" className="underline font-semibold">
+                            <a href="/legal/guideline" target="_blank" className="underline font-semibold">
                                 커뮤니티 가이드라인
                             </a>
                             에 동의하는 것으로 간주합니다.
@@ -469,3 +498,4 @@ export default function PostDetail() {
         </div>
     );
 }
+
