@@ -8,16 +8,16 @@ export default function GuidelinesPage() {
                 아래 가이드라인을 위반하는 게시물이나 댓글은 운영자의 판단에 따라 사전 통지 없이 삭제되거나 수정될 수 있습니다.
             </p>
 
-            <h2 className="mt-8 text-xl font-semibold">1. 비난 및 욕설 금지</h2>
+            <h2 className="mt-8 text-xl font-semibold">1. 비난 및 욕설 자제</h2>
             <ul className="list-disc pl-6">
-                <li>타인에 대한 욕설, 비방, 인신공격, 조롱을 금지합니다.</li>
-                <li>다른 이용자의 닉네임을 언급하며 저격하거나 분란을 조장하는 행위를 금지합니다.</li>
+                <li>타인에 대한 욕설, 비방, 인신공격, 조롱을 자제합니다.</li>
+                <li>다른 이용자의 닉네임을 언급하며 저격하거나 분란을 조장하는 행위를 자제합니다.</li>
             </ul>
 
-            <h2 className="mt-8 text-xl font-semibold">2. 과도한 비관 및 유해 콘텐츠 금지 (중요)</h2>
+            <h2 className="mt-8 text-xl font-semibold">2. 과도한 비관 및 유해 콘텐츠 자제 (중요)</h2>
             <p className="mt-2">
                 본 커뮤니티는 건강한 소통을 지향하며, Google AdSense 정책을 준수합니다.
-                다음과 같은 콘텐츠는 엄격히 금지됩니다.
+                다음과 같은 콘텐츠는 엄격히 자제합니다.
             </p>
             <ul className="list-disc pl-6">
                 <li>자해, 자살 등 극단적 선택을 암시, 조장, 권유하는 내용</li>

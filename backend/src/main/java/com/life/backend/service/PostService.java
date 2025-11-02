@@ -9,6 +9,8 @@ import com.life.backend.repository.CategoryRepository;
 import com.life.backend.repository.CommentRepository;
 import com.life.backend.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +45,13 @@ public class PostService {
 
     private static final DateTimeFormatter F = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    // TIPTAP 에디터가 사용하는 태그/속성 허용 목록
+    private static final Safelist TIPTAP_SAFELIST = Safelist.relaxed()
+            .addTags("img", "video", "h2", "h3", "h4")
+            .addAttributes("img", "src", "alt", "style", "width")
+            .addAttributes("video", "src", "controls")
+            .addAttributes(":all", "style");
 
     @Value("${upload.dir:./uploads}")
     private String uploadDir;
@@ -193,11 +202,15 @@ public class PostService {
         var cat = categoryRepo.findByCode(in.getCategoryCode())
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "잘못된 카테고리 코드"));
 
+        // HTML 소독 (XSS 방지) ▼▼▼
+        String dirtyHtml = in.getContent();
+        String cleanHtml = Jsoup.clean(dirtyHtml, TIPTAP_SAFELIST);
+
         var p = new Post();
         p.setClientReqId(in.getClientReqId());
         p.setCategory(cat);
         p.setTitle(in.getTitle());
-        p.setContent(in.getContent());
+        p.setContent(cleanHtml); // ◀ "소독된" HTML을 저장
         p.setAuthorId("anon");
         p.setAuthorNick(in.getAuthorNick().trim());
         p.setPostPasswordHash(encoder.encode(in.getPassword()));
@@ -223,17 +236,21 @@ public class PostService {
         verifyPostPassword(p, in.getPassword());
 
         String oldHtml = p.getContent();
-        String newHtml = in.getContent();
+
+        // ▼▼▼ 4. HTML 소독 (XSS 방지) ▼▼▼
+        String dirtyHtml = in.getContent();
+        String cleanHtml = Jsoup.clean(dirtyHtml, TIPTAP_SAFELIST);
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         if (in.getTitle() != null) p.setTitle(in.getTitle());
 
         // ✅ content를 실제로 바꿀 때만 diff/삭제 수행
-        if (newHtml != null) {
-            p.setContent(newHtml);
+        if (dirtyHtml != null) {
+            p.setContent(cleanHtml); // ◀ "소독된" HTML로 업데이트
             p.setUpdateYn("Y");
 
             var before = extractUploadPaths(oldHtml);
-            var after  = extractUploadPaths(newHtml);
+            var after  = extractUploadPaths(cleanHtml); // ◀ "소독된" HTML 기준
             before.removeAll(after);     // 수정 전엔 있었는데, 수정 후엔 없는 파일만
             before.forEach(this::safeDelete);
         }
@@ -297,7 +314,14 @@ public class PostService {
         c.setPost(p);
         c.setNickname(in.getNickname().trim());
         c.setCommentPasswordHash(encoder.encode(in.getPassword()));
-        c.setContent(in.getContent());
+
+        // ▼▼▼ 5. (중요) 댓글 HTML 소독 (태그 허용 안 함) ▼▼▼
+        // 댓글 입력창은 <textarea>이므로 HTML 태그가 들어오면 안 됩니다.
+        String dirtyComment = in.getContent();
+        String cleanComment = Jsoup.clean(dirtyComment, Safelist.none()); // .none() = 모든 HTML 태그 제거
+        c.setContent(cleanComment);
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
         c.setUpdateYn("N");
         c.setDeleteYn("N");
         c = commentRepo.save(c);
@@ -311,7 +335,15 @@ public class PostService {
         if (!c.getPost().getId().equals(postId)) throw new ResponseStatusException(BAD_REQUEST, "잘못된 요청입니다.");
 
         verifyCommentPassword(c, in.getPassword());
-        if (in.getContent() != null) c.setContent(in.getContent());
+
+        // ▼▼▼ 6. (중요) 댓글 수정 시에도 HTML 소독 ▼▼▼
+        if (in.getContent() != null) {
+            String dirtyComment = in.getContent();
+            String cleanComment = Jsoup.clean(dirtyComment, Safelist.none()); // 모든 HTML 태그 제거
+            c.setContent(cleanComment);
+        }
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
         c.setUpdateYn("Y");
         return toDTO(c);
     }

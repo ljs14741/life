@@ -50,8 +50,6 @@ export default function WritePage() {
         if (!nickname.trim()) return '닉네임을 입력하세요.';
         if (!password || password.trim().length < 3) return '비밀번호는 최소 3자입니다.';
         if (password !== password2) return '비밀번호 확인이 일치하지 않습니다.';
-        if (!title.trim()) return '제목을 입력하세요.';
-        if (isHtmlEmpty(content)) return '내용을 입력하세요.';
         return null;
     };
 
@@ -95,35 +93,44 @@ export default function WritePage() {
     const inputCls =
         'mt-1 w-full rounded border p-2 text-[16px] ' +
         'bg-white text-neutral-900 placeholder:text-neutral-400 ' +
-        'dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 ' +
+        'dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 ' +
         'border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ' +
         'dark:border-neutral-700';
 
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-black">
             <main className="relative z-10 max-w-3xl mx-auto p-4">
-                <h1 className="text-2xl font-bold mb-4">글쓰기</h1>
+                <h1 className="text-2xl font-bold mb-4 dark:text-white">글쓰기</h1>
 
                 <form onSubmit={onSubmit} className="space-y-4">
                     {/* 카테고리 */}
                     <div>
-                        <label className="block text-sm font-medium">카테고리</label>
-                        <select
-                            className={inputCls + ' appearance-none'}
-                            value={categoryCode}
-                            onChange={(e) => setCategoryCode(e.target.value)}
-                        >
-                            {categories.length > 0
-                                ? categories.map((c) => (
-                                    <option key={c.id} value={c.code}>{c.name}</option>
-                                ))
-                                : <option value="MISTAKE">실수담</option>}
-                        </select>
+                        <label className="block text-sm font-medium dark:text-neutral-300">카테고리</label>
+
+                        <div className="relative mt-1">
+                            <select
+                                className={inputCls + ' appearance-none pr-10'} // appearance-none과 pr-10 추가
+                                value={categoryCode}
+                                onChange={(e) => setCategoryCode(e.target.value)}
+                            >
+                                {categories.length > 0
+                                    ? categories.map((c) => (
+                                        <option key={c.id} value={c.code}>{c.name}</option>
+                                    ))
+                                    : <option value="free">기타/잡담</option>}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500 dark:text-neutral-400">
+                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7.5 7.5l5 5 5-5" />
+                                </svg>
+                            </div>
+                        </div>
+                        {/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
                     </div>
 
                     {/* 닉네임 */}
                     <div>
-                        <label className="block text-sm font-medium">닉네임</label>
+                        <label className="block text-sm font-medium dark:text-neutral-300">닉네임</label>
                         <input
                             className={inputCls}
                             value={nickname}
@@ -137,7 +144,7 @@ export default function WritePage() {
                     {/* 비밀번호/확인 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium">비밀번호(최소 3자)</label>
+                            <label className="block text-sm font-medium dark:text-neutral-300">비밀번호(최소 3자)</label>
                             <input
                                 type="password"
                                 className={inputCls}
@@ -148,7 +155,7 @@ export default function WritePage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium">비밀번호 확인</label>
+                            <label className="block text-sm font-medium dark:text-neutral-300">비밀번호 확인</label>
                             <input
                                 type="password"
                                 className={inputCls}
@@ -162,7 +169,7 @@ export default function WritePage() {
 
                     {/* 제목 */}
                     <div>
-                        <label className="block text-sm font-medium">제목</label>
+                        <label className="block text-sm font-medium dark:text-neutral-300">제목</label>
                         <input
                             className={inputCls}
                             value={title}
@@ -174,11 +181,19 @@ export default function WritePage() {
 
                     {/* 내용 (리치 에디터) */}
                     <div>
-                        <label className="block text-sm font-medium">내용</label>
+                        <label className="block text-sm font-medium dark:text-neutral-300">내용</label>
                         <div className="mt-1">
                             <RichEditor value={content} onChange={setContent} />
                         </div>
                     </div>
+
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        글을 등록하면{' '}
+                        <a href="/legal/guideline" target="_blank" className="underline font-semibold">
+                            커뮤니티 가이드라인
+                        </a>
+                        에 동의하는 것으로 간주합니다. (욕설, 비난 자제)
+                    </p>
 
                     <button
                         type="submit"
