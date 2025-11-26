@@ -130,7 +130,7 @@ export default function Home() {
                   ${tab === t.key
                                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
                                 : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
-                        >애
+                        >
                             {t.label}
                         </button>
                     ))}
