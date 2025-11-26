@@ -54,7 +54,7 @@ function htmlToPlainPreview(html: string, max = 120): string {
 }
 
 export default function Home() {
-    const [tab, setTab] = useState<'best' | 'trending' | 'latest'>('best');
+    const [tab, setTab] = useState<'best' | 'trending' | 'latest'>('latest');
 
     // 좋아요 상태 (로컬)
     const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
@@ -119,9 +119,9 @@ export default function Home() {
                 {/* ... (탭, 카드 그리드 등 나머지 코드는 동일) ... */}
                 <div className="mb-4 flex items-center gap-2 text-sm">
                     {[
-                        { key: 'best', label: '베스트' },
-                        { key: 'trending', label: '실시간' },
                         { key: 'latest', label: '최신' },
+                        { key: 'trending', label: '실시간' },
+                        { key: 'best', label: '베스트' },
                     ].map((t) => (
                         <button
                             key={t.key}
