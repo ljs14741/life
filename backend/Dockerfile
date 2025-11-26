@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim
+FROM openjdk:17-jdk-slim-bullseye
 WORKDIR /app
 
 COPY build/libs/backend-0.0.1-SNAPSHOT.war /app/app.war
