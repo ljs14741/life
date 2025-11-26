@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-bullseye
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
 COPY build/libs/backend-0.0.1-SNAPSHOT.war /app/app.war
