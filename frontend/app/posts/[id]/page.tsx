@@ -260,12 +260,14 @@ export default function PostDetail() {
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold dark:text-white">{post.title}</h1>
-                        <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex flex-wrap items-center gap-x-2">
+                        <div
+                            className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex flex-wrap items-center gap-x-2">
                             <span>{post.categoryName}</span>
                             <span>· {post.authorNick}</span>
                             <span>· {post.createDate}</span>
                             {post.updateYn === 'Y' && <span>· (수정됨)</span>}
                             <span className="ml-2">· 👁 {post.views ?? 0}</span>
+                            <span className="ml-2">· 💬 {comments.length}</span>
                             <button
                                 onClick={toggleLike}
                                 className={`ml-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 

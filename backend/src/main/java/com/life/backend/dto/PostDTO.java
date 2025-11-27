@@ -17,6 +17,7 @@ public class PostDTO {
     private String updateDate;
     private Integer views;
     private Integer likes;
+    private Integer commentCount;
     private String updateYn;
     private String deleteYn;
 

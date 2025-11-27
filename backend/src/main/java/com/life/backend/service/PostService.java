@@ -86,6 +86,29 @@ public class PostService {
         return toDTO(p);
     }
 
+    /** PostDTO 목록을 받아 해당 글들의 활성 댓글 수를 채워주는 메서드 */
+    private List<PostDTO> fillCommentCounts(List<PostDTO> postList) {
+        if (postList.isEmpty()) return postList;
+
+        // 1. 글 ID 목록 추출
+        List<Long> postIds = postList.stream().map(PostDTO::getId).toList();
+
+        // 2. Repository를 통해 댓글 수를 한 번에 조회하여 맵에 저장
+        List<Object[]> counts = commentRepo.countActiveCommentsByPostIds(postIds);
+        Map<Long, Integer> commentCountMap = new HashMap<>();
+        for (Object[] row : counts) {
+            // row[0] = Post ID (Long), row[1] = COUNT(c) (Long)
+            commentCountMap.put((Long) row[0], ((Long) row[1]).intValue());
+        }
+
+        // 3. PostDTO에 댓글 수를 설정
+        for (PostDTO dto : postList) {
+            dto.setCommentCount(commentCountMap.getOrDefault(dto.getId(), 0));
+        }
+
+        return postList;
+    }
+
     @Transactional(readOnly = true)
     public List<PostDTO> listAdvanced(String categoryCode, String q, int page, int size,
                                       String sort, String period, int min) {
@@ -95,16 +118,26 @@ public class PostService {
         }
         final var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size,1), 100));
 
+        List<PostDTO> results;
+
         sort = (sort == null ? "latest" : sort.toLowerCase());
         switch (sort) {
             case "best":
-                return listBest(cat, q, pageable, normalizePeriod(period, "30d"));
+                results = listBest(cat, q, pageable, normalizePeriod(period, "30d"));
+                break;
+
             case "trending":
-                return listTrendingWithBackfill(cat, q, pageable, min);
+                results = listTrendingWithBackfill(cat, q, pageable, min);
+                break;
+
             case "latest":
             default:
-                return postRepo.findLatest(cat, emptyToNull(q), pageable).stream().map(this::toDTO).toList();
+                results = postRepo.findLatest(cat, emptyToNull(q), pageable).stream().map(this::toDTO).toList();
+                break;
         }
+
+        // ▼▼▼ 댓글 수를 채운 결과를 최종적으로 반환합니다. ▼▼▼
+        return fillCommentCounts(results);
     }
 
     private String normalizePeriod(String period, String def) {

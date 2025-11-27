@@ -15,4 +15,12 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
         order by c.createDate asc
     """)
     List<Comment> findActiveByPost(Post post);
+
+    @Query("""
+        SELECT c.post.id, COUNT(c)
+        FROM Comment c
+        WHERE c.post.id IN :postIds AND c.deleteYn = 'N'
+        GROUP BY c.post.id
+    """)
+    List<Object[]> countActiveCommentsByPostIds(List<Long> postIds);
 }

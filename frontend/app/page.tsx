@@ -18,6 +18,7 @@ type Post = {
     updateDate: string;
     views: number;
     likes: number;
+    commentCount?: number;
 };
 
 const fetcher = (url: string) =>
@@ -163,6 +164,7 @@ export default function Home() {
                                     <span>{p.authorNick}</span>
                                     <div className="flex items-center gap-3">
                                         <span title="조회수">👁 {p.views ?? 0}</span>
+                                        <span title="댓글 수">💬 {p.commentCount ?? 0}</span>
                                         <div
                                             className="inline-flex items-center gap-1 text-red-600 dark:text-red-500"
                                             title="좋아요 수"
