@@ -112,17 +112,20 @@ public class PostService {
     // ✅ [수정됨] 베스트: 스킵(Skip) 로직 추가 및 조회 범위 확장
     // ==========================================================
     private List<PostDTO> listBest(Category cat, String q, Pageable pageable, String period) {
+        // period가 null이면 위 함수에 의해 '전체 기간'이 됨
         var since = sinceFromPeriod(period);
 
-        // 중요: 요청한 페이지까지 커버할 수 있도록 넉넉하게 DB에서 가져옵니다.
-        // 예를 들어 2페이지(24번째 글)를 보려면 DB에서 최소 30~40개는 가져와야 정렬 후 자를 수 있습니다.
+        // 가져올 개수 계산
         int limitNeeded = (pageable.getPageNumber() + 1) * pageable.getPageSize();
-        // 넉넉하게 1.5배 혹은 최소 60개
-        int fetchLimit = Math.max(limitNeeded + 20, 60);
+
+        // 전체 기간일 경우 글이 많을 수 있으니 후보군(fetchLimit)을 좀 더 넉넉히 잡거나,
+        // 아예 findLatest(날짜조건 없음)를 써서 가져와도 되지만,
+        // 기존 쿼리(findCandidatesSince)에 날짜만 옛날로 넣어서 재활용하는 게 코드가 깔끔합니다.
+        int fetchLimit = Math.max(limitNeeded + 50, 200); // 넉넉하게 200개 정도 조회 (메모리 정렬용)
 
         var candidates = postRepo.findCandidatesSince(cat, emptyToNull(q), since, PageRequest.of(0, fetchLimit));
 
-        // 메모리 정렬
+        // 메모리 정렬 (좋아요 -> 조회수 -> 최신순)
         candidates.sort((a, b) -> {
             int c = Integer.compare(b.getLikes(), a.getLikes());
             if (c != 0) return c;
@@ -131,10 +134,9 @@ public class PostService {
             return b.getCreateDate().compareTo(a.getCreateDate());
         });
 
-        // ✅ Stream API를 사용하여 페이지네이션 적용 (skip -> limit)
         return candidates.stream()
-                .skip(pageable.getOffset()) // (page * size) 만큼 건너뛰기
-                .limit(pageable.getPageSize()) // size 만큼 가져오기
+                .skip(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .map(this::toDTO)
                 .toList();
     }
@@ -228,10 +230,13 @@ public class PostService {
     private java.time.LocalDateTime now() { return java.time.LocalDateTime.now(); }
 
     private java.time.LocalDateTime sinceFromPeriod(String period) {
-        return switch (period) {
-            case "7d" -> now().minusDays(7);
+        if (period == null) return now().minusYears(100); // 👈 기본값을 '전체 기간'으로 변경 (원하면 "30d"로 유지 가능)
+        return switch (period.toLowerCase()) {
+            case "7d"  -> now().minusDays(7);
             case "14d" -> now().minusDays(14);
-            default -> now().minusDays(30);
+            case "30d" -> now().minusDays(30);
+            case "all" -> now().minusYears(100); // 100년 전 = 사실상 전체 기간
+            default    -> now().minusYears(100); // 알 수 없는 값도 전체 기간으로 처리
         };
     }
 
