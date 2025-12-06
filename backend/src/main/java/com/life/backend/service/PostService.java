@@ -94,7 +94,7 @@ public class PostService {
 
         switch (sort) {
             case "best":
-                results = listBest(cat, q, pageable, normalizePeriod(period, "30d"));
+                results = listBest(cat, q, pageable, normalizePeriod(period, "all"));
                 break;
             case "trending":
                 results = listTrendingWithBackfill(cat, q, pageable, min);
@@ -222,7 +222,7 @@ public class PostService {
     private String normalizePeriod(String period, String def) {
         if (period == null || period.isBlank()) return def;
         return switch (period.toLowerCase()) {
-            case "7d", "14d", "30d" -> period.toLowerCase();
+            case "7d", "14d", "30d", "all" -> period.toLowerCase(); // all 추가됨
             default -> def;
         };
     }
