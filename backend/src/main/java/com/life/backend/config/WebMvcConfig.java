@@ -15,9 +15,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 예: http(s)://life.binaryworld.kr/uploads/abcd.png
+        // 1. 절대 경로로 변환
         Path root = Path.of(uploadDir).toAbsolutePath().normalize();
-        String location = root.toUri().toString(); // "file:/xxx/..."
+        String location = root.toUri().toString();
+
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
+
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(location);
     }

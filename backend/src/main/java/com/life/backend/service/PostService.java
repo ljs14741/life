@@ -399,20 +399,32 @@ public class PostService {
     @Transactional
     public UploadResult upload(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) throw new ResponseStatusException(BAD_REQUEST, "빈 파일");
+
         String ct = file.getContentType();
         if (ct == null || (!ALLOWED_IMAGE.contains(ct) && !ALLOWED_VIDEO.contains(ct)))
             throw new ResponseStatusException(BAD_REQUEST, "허용되지 않는 형식");
+
         Path root = Path.of(uploadDir).toAbsolutePath().normalize();
         LocalDate today = LocalDate.now();
-        Path dir = root.resolve(Path.of(String.valueOf(today.getYear()), String.format("%02d", today.getMonthValue()), String.format("%02d", today.getDayOfMonth())));
-        Files.createDirectories(dir);
+
+        // ✅ [수정됨] 날짜 폴더 형식을 "yyyyMMdd" (예: 20251210) 한 단계로 변경
+        String dateFolder = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        Path dir = root.resolve(dateFolder);
+
+        Files.createDirectories(dir); // 해당 폴더가 없으면 생성
+
         String ext = "";
         String original = file.getOriginalFilename();
-        if (original != null && original.lastIndexOf('.') >= 0) ext = original.substring(original.lastIndexOf('.')).toLowerCase();
+        if (original != null && original.lastIndexOf('.') >= 0) {
+            ext = original.substring(original.lastIndexOf('.')).toLowerCase();
+        }
+
         String stored = UUID.randomUUID().toString().replace("-", "") + ext;
         file.transferTo(dir.resolve(stored));
-        return new UploadResult("/uploads/" + today.getYear() + "/" + String.format("%02d", today.getMonthValue()) + "/" + String.format("%02d", today.getDayOfMonth()) + "/" + stored, original, file.getSize(), ct);
+
+        return new UploadResult("/uploads/" + dateFolder + "/" + stored, original, file.getSize(), ct);
     }
+
     public record UploadResult(String url, String originalName, long size, String contentType) {}
     private Path uploadsRoot() { return Path.of(uploadDir).toAbsolutePath().normalize(); }
     private Set<Path> extractUploadPaths(String html) {
