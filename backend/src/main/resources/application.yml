@@ -28,4 +28,4 @@ spring:
         jdbc.time_zone: Asia/Seoul
 
 upload:
-  dir: ./uploads
+  dir: ${UPLOAD_DIR:./uploads}
