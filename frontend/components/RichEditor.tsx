@@ -37,12 +37,29 @@ const FontSize = Extension.create({
 const ResizableImage = Image.extend({
     addAttributes() {
         return {
-            ...(this.parent?.() as Record<string, unknown>),
+            src: {
+                default: null,
+            },
+            alt: {
+                default: null,
+            },
+            title: {
+                default: null,
+            },
             width: {
                 default: null,
-                parseHTML: el =>
-                    el.getAttribute('width') || (el as HTMLElement).style.width || null,
-                renderHTML: attrs => (attrs.width ? { style: `width:${attrs.width}` } : {}),
+                parseHTML: element =>
+                    element.getAttribute('width') ||
+                    (element as HTMLElement).style.width ||
+                    null,
+                renderHTML: attributes => {
+                    if (!attributes.width) {
+                        return {};
+                    }
+                    return {
+                        style: `width:${attributes.width}`,
+                    };
+                },
             },
         };
     },
