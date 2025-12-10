@@ -28,4 +28,4 @@ spring:
         jdbc.time_zone: Asia/Seoul
 
 upload:
-  dir: ${UPLOAD_DIR:./uploads}
+  dir: /home/binary/binaryworld/uploads
