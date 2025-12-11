@@ -49,7 +49,8 @@ public class PostService {
             .addTags("img", "video", "h2", "h3", "h4")
             .addAttributes("img", "src", "alt", "style", "width")
             .addAttributes("video", "src", "controls")
-            .addAttributes(":all", "style");
+            .addAttributes(":all", "style")
+            .removeProtocols("img", "src", "http", "https");
 
     @Value("${upload.dir:./uploads}")
     private String uploadDir;
